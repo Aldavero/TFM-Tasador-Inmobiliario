@@ -770,19 +770,19 @@ elif menu_seleccionado == "📐 Arquitectura MLOps":
     st.markdown("<p style='color: #ffffff; font-size: 1.1rem; margin-bottom: 30px;'>Arquitectura MLOps completa que procesa texto, datos tabulares e imágenes en tiempo real.</p>", unsafe_allow_html=True)
 
     # Paso 1
-    st.info("### 📥 1. Ingesta de Datos (Data Lake)\\nUn script automático extrae propiedades y sus imágenes desde portales inmobiliarios. Los datos se limpian de NaNs y se estructuran en un Data Lake local.")
+    st.info("### 📥 1. Ingesta de Datos (Data Lake)\nUn script automático extrae propiedades y sus imágenes desde portales inmobiliarios. Los datos se limpian de NaNs y se estructuran en un Data Lake local.")
     st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
     
     # Paso 2
-    st.warning("### 🤖 2. Etiquetado VLM (Google Gemini 1.5)\\nPara evitar el coste del etiquetado manual, un Modelo de Lenguaje Visual (VLM) analiza miles de fotos para clasificar el estado de conservación y la calidad de los materiales, creando nuestra *Ground Truth*.")
+    st.warning("### 🤖 2. Etiquetado VLM (Google Gemini 1.5)\nPara evitar el coste del etiquetado manual, un Modelo de Lenguaje Visual (VLM) analiza miles de fotos para clasificar el estado de conservación y la calidad de los materiales, creando nuestra *Ground Truth*.")
     st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
 
     # Paso 3 (Columnas)
     c_arch1, c_arch2 = st.columns(2)
     with c_arch1:
-        st.error("### 👁️ 3A. PyTorch CNN (Visión)\\nUna red neuronal **ResNet50** se entrena mediante Transfer Learning para detectar patrones arquitectónicos directamente desde los píxeles de las imágenes.")
+        st.error("### 👁️ 3A. PyTorch CNN (Visión)\nUna red neuronal **ResNet50** se entrena mediante Transfer Learning para detectar patrones arquitectónicos directamente desde los píxeles de las imágenes.")
     with c_arch2:
-        st.success("### 📊 3B. Feature Engineering (Tabular)\\nEl modelo analiza datos clásicos (barrio, m², ascensor) y utiliza Target Encoding para traducir las características cualitativas a ratios numéricos que el modelo puede comprender.")
+        st.success("### 📊 3B. Feature Engineering (Tabular)\nEl modelo analiza datos clásicos (barrio, m², ascensor) y utiliza Target Encoding para traducir las características cualitativas a ratios numéricos que el modelo puede comprender.")
 
     st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
 
