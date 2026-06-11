@@ -241,7 +241,7 @@ def predict_image_class(img_file):
     except Exception as e:
         return "Buen estado" # Default en caso de error
 
-def generar_pdf_tasacion(datos_inmueble, precio_final, precio_base_geografico, efecto_estado_materiales, efecto_extras):
+def generar_pdf_tasacion(datos_inmueble, precio_final, precio_base_geografico, efecto_estado_calidad, ajuste_extras):
     pdf = FPDF()
     pdf.add_page()
     
@@ -291,14 +291,14 @@ def generar_pdf_tasacion(datos_inmueble, precio_final, precio_base_geografico, e
     pdf.ln(5)
     
     pdf.set_font('Helvetica', '', 12)
-    pdf.cell(100, 8, 'Base Geografica y Caracteristicas:', border=0)
+    pdf.cell(80, 8, 'Base Geografica y Superficie:', border=0)
     pdf.cell(0, 8, f"{precio_base_geografico:,.0f} EUR", border=0, ln=True, align='R')
     
-    pdf.cell(100, 8, 'Impacto Estado y Materiales (IA Visual):', border=0)
-    pdf.cell(0, 8, f"{efecto_estado_materiales:+,.0f} EUR", border=0, ln=True, align='R')
+    pdf.cell(80, 8, 'Impacto Estado de Conservacion y Materiales:', border=0)
+    pdf.cell(0, 8, f"{efecto_estado_calidad:+,.0f} EUR", border=0, ln=True, align='R')
     
-    pdf.cell(100, 8, 'Ajuste por Extras (Ascensor, Garaje, etc):', border=0)
-    pdf.cell(0, 8, f"{efecto_extras:+,.0f} EUR", border=0, ln=True, align='R')
+    pdf.cell(80, 8, 'Ajuste Algoritmico Extras (Ascensor, etc):', border=0)
+    pdf.cell(0, 8, f"{ajuste_extras:+,.0f} EUR", border=0, ln=True, align='R')
     
     pdf.ln(5)
     
@@ -391,13 +391,8 @@ if menu_seleccionado == "🏠 Tasador Pro (Multimodal)":
                         preds = [predict_image_class(f) for f in uploaded_files[:5]]
                         # Coger la clase más repetida (moda)
                         estado_predicho = max(set(preds), key=preds.count)
-                        # Inferir la calidad basándonos en el estado detectado por la CNN
-                        if estado_predicho == "Lujo":
-                            calidad_final = "Premium"
-                        else:
-                            calidad_final = "Básica"
-                    else:
-                        calidad_final = calidad_manual
+                    
+                    calidad_final = calidad_manual
                     
                     # 2. Inferencia Tabular
                     bundle = modelo_maestro
@@ -497,24 +492,38 @@ if menu_seleccionado == "🏠 Tasador Pro (Multimodal)":
                             delta=f"{precio_m2:,.0f} € / m² Equivalente"
                         )
                         
-                        # --- Cálculos XAI Basados en el Modelo Predictivo (Sin Multiplicadores Heurísticos) ---
-                        # 1. Base: Predicción del modelo con estado=Buen estado (2.0), calidad=Básica (1.0) y sin extras (0)
-                        X_base = pd.DataFrame([
-                            [precio_m2_enc, m2, habs, banos, 0, 0, 0, 0, 0, r_m2, r_hab, 2.0, 1.0]
-                        ], columns=X_input.columns)
-                        X_base_scaled = bundle['scaler'].transform(X_base)
-                        precio_base_geografico = np.expm1(bundle['modelo'].predict(X_base_scaled)[0])
-                        
-                        # 2. Extras: Impacto marginal de los extras (ascensor, trastero, garaje, piscina, terraza)
-                        X_extras = pd.DataFrame([
-                            [precio_m2_enc, m2, habs, banos, int(ascensor), int(terraza), int(piscina), int(garaje), int(trastero), r_m2, r_hab, 2.0, 1.0]
-                        ], columns=X_input.columns)
-                        X_extras_scaled = bundle['scaler'].transform(X_extras)
-                        precio_con_extras = np.expm1(bundle['modelo'].predict(X_extras_scaled)[0])
-                        efecto_extras = precio_con_extras - precio_base_geografico
-                        
-                        # 3. Estado y Materiales: Impacto marginal del estado de conservación y calidad de materiales predichos/seleccionados
-                        efecto_estado_materiales = precio_final - precio_con_extras
+                        # --- Cálculos XAI Counterfactual (impacto marginal real del modelo) ---
+                        # Baseline: mínimo estado (A reformar=1) y mínima calidad (Básica=1), sin extras
+                        min_estado_enc = min(ESTADO_ENCODING.values())
+                        min_calidad_enc = min(CALIDAD_ENCODING.values())
+
+                        X_xai_base = pd.DataFrame([[
+                            precio_m2_enc, m2, habs, banos,
+                            0, 0, 0, 0, 0,
+                            r_m2, r_hab, min_estado_enc, min_calidad_enc
+                        ]], columns=[
+                            'target_encoding_m2', 'm2', 'habitaciones', 'banos',
+                            'tiene_ascensor', 'tiene_terraza', 'tiene_piscina', 'tiene_garaje', 'tiene_trastero',
+                            'ratio_metros_zona', 'ratio_hab_zona',
+                            'target_encoding_estado', 'target_encoding_calidad'
+                        ])
+
+                        X_xai_estado_calidad = pd.DataFrame([[
+                            precio_m2_enc, m2, habs, banos,
+                            0, 0, 0, 0, 0,
+                            r_m2, r_hab, estado_enc, calidad_enc
+                        ]], columns=[
+                            'target_encoding_m2', 'm2', 'habitaciones', 'banos',
+                            'tiene_ascensor', 'tiene_terraza', 'tiene_piscina', 'tiene_garaje', 'tiene_trastero',
+                            'ratio_metros_zona', 'ratio_hab_zona',
+                            'target_encoding_estado', 'target_encoding_calidad'
+                        ])
+
+                        precio_base_geografico = np.expm1(bundle['modelo'].predict(bundle['scaler'].transform(X_xai_base))[0])
+                        precio_con_estado_calidad = np.expm1(bundle['modelo'].predict(bundle['scaler'].transform(X_xai_estado_calidad))[0])
+
+                        efecto_estado_calidad = precio_con_estado_calidad - precio_base_geografico
+                        ajuste_extras = precio_final - precio_con_estado_calidad
 
                         st.markdown("""
                         <div style='text-align:center; margin-top: 15px;'>
@@ -579,7 +588,7 @@ if menu_seleccionado == "🏠 Tasador Pro (Multimodal)":
                             "Calidad IA (Vision)": calidad_final
                         }
                         try:
-                            pdf_bytes = generar_pdf_tasacion(datos_inmueble, precio_final, precio_base_geografico, efecto_estado_materiales, efecto_extras)
+                            pdf_bytes = generar_pdf_tasacion(datos_inmueble, precio_final, precio_base_geografico, efecto_estado_calidad, ajuste_extras)
                             
                             col_pdf1, col_pdf2 = st.columns([1, 1])
                             with col_pdf2:
