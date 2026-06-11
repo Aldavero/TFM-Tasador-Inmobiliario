@@ -1,0 +1,38 @@
+{
+    "0": {
+        "superficie": 83.58695652173913,
+        "habitaciones": 2.760869565217391
+    },
+    "1": {
+        "superficie": 133.78688524590163,
+        "habitaciones": 2.721311475409836
+    },
+    "2": {
+        "superficie": 141.9857142857143,
+        "habitaciones": 2.7
+    },
+    "3": {
+        "superficie": 99.66666666666667,
+        "habitaciones": 3.3333333333333335
+    },
+    "4": {
+        "superficie": 141.25,
+        "habitaciones": 3.3125
+    },
+    "6": {
+        "superficie": 141.46464646464648,
+        "habitaciones": 2.782828282828283
+    },
+    "7": {
+        "superficie": 155.12645590682197,
+        "habitaciones": 2.8602329450915143
+    },
+    "8": {
+        "superficie": 109.07692307692308,
+        "habitaciones": 2.58974358974359
+    },
+    "9": {
+        "superficie": 77.42105263157895,
+        "habitaciones": 2.736842105263158
+    }
+}

@@ -1,0 +1,59 @@
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variables de entorno (API KEYS - NUNCA subir)
+.env
+data_pipeline/.env
+
+# Datos crudos y procesados (demasiado grandes)
+data_pipeline/data/
+
+# Archivos enormes
+paquete_colab.zip
+Memoria_TFM_Final_Actualizado.docx
+
+# Scripts de mantenimiento interno (no necesarios para la app)
+auditar_y_corregir.py
+editar_memoria.py
+fix_nb4.py
+inspect_tables.py
+run_tanda.py
+test_gemini_sample.py
+lanzar_tanda.bat
+registrar_tarea.ps1
+setup_tareas_windows.ps1
+TFM_Registro_Evolutivo.md
+
+# Logs y gráficas temporales
+logs/
+graficas_generadas/
+graficas_memoria/
+
+# Notebooks antiguos (solo se sube notebooks_v2)
+notebooks/
+
+# Pesos de la CNN (94MB - puede subirse pero opcionalmente con Git LFS)
+# Descomenta la línea siguiente si quieres excluirlo:
+# model_training/cnn_model_pesos.pth
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,37 @@
+{
+    "Castellana": {
+        "precio_m2_medio": 11405.779518043739,
+        "superficie_media": 169.1764705882353,
+        "habs_media": 3.1176470588235294
+    },
+    "Embajadores-Lavapiés": {
+        "precio_m2_medio": 5845.791451468273,
+        "superficie_media": 77.61111111111111,
+        "habs_media": 2.2777777777777777
+    },
+    "Goya": {
+        "precio_m2_medio": 11787.303061300949,
+        "superficie_media": 149.74193548387098,
+        "habs_media": 2.774193548387097
+    },
+    "Lista": {
+        "precio_m2_medio": 11289.917963581014,
+        "superficie_media": 142.5,
+        "habs_media": 2.5625
+    },
+    "Otros": {
+        "precio_m2_medio": 6295.699740887464,
+        "superficie_media": 117.05176470588235,
+        "habs_media": 2.6588235294117646
+    },
+    "Recoletos": {
+        "precio_m2_medio": 14890.05844138897,
+        "superficie_media": 171.56,
+        "habs_media": 2.72
+    },
+    "Universidad-Malasaña": {
+        "precio_m2_medio": 8932.736791932108,
+        "superficie_media": 114.71428571428571,
+        "habs_media": 2.5238095238095237
+    }
+}
