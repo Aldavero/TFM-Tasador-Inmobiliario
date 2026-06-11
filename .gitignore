@@ -16,6 +16,7 @@ data_pipeline/.env
 
 # Datos crudos y procesados (demasiado grandes)
 data_pipeline/data/
+!data_pipeline/data/processed/propiedades_etiquetadas.csv
 
 # Archivos enormes
 paquete_colab.zip

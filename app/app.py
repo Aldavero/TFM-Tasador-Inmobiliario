@@ -65,7 +65,20 @@ CALIDAD_ENCODING = load_json_encoding("calidad_encoding.json")
 def load_tabular_model():
     ruta_base = os.path.dirname(os.path.abspath(__file__))
     ruta_modelo = os.path.join(ruta_base, "modelo_madrid_global.joblib")
-    return joblib.load(ruta_modelo) if os.path.exists(ruta_modelo) else None
+    try:
+        if os.path.exists(ruta_modelo):
+            return joblib.load(ruta_modelo)
+    except Exception as e:
+        import subprocess
+        # Si falla por incompatibilidad de versiones, reentrenamos el modelo usando las librerías del servidor
+        ruta_script = os.path.abspath(os.path.join(ruta_base, "..", "model_training", "train_tabular.py"))
+        try:
+            subprocess.run([sys.executable, ruta_script], check=True)
+            if os.path.exists(ruta_modelo):
+                return joblib.load(ruta_modelo)
+        except Exception as train_error:
+            pass
+    return None
 
 @st.cache_resource
 def load_cnn_model():
