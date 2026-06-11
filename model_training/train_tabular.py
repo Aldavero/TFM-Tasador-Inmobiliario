@@ -16,7 +16,7 @@ ENCODING_PATH = BASE_DIR / "app" / "barrios_encoding.json"
 ESTADO_ENCODING_PATH = BASE_DIR / "app" / "estado_encoding.json"
 CALIDAD_ENCODING_PATH = BASE_DIR / "app" / "calidad_encoding.json"
 
-MIN_MUESTRAS_BARRIO = 15
+MIN_MUESTRAS_BARRIO = 5
 
 def main():
     print("="*60)

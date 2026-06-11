@@ -1,37 +1,232 @@
 {
+    "Almagro": {
+        "precio_m2_medio": 11080.594899634598,
+        "superficie_media": 199.71428571428572,
+        "habs_media": 3.0714285714285716
+    },
+    "Almendrales": {
+        "precio_m2_medio": 4271.931033522664,
+        "superficie_media": 76.8,
+        "habs_media": 2.6
+    },
+    "Aluche": {
+        "precio_m2_medio": 3078.227877385772,
+        "superficie_media": 74.6,
+        "habs_media": 2.8
+    },
+    "Argüelles": {
+        "precio_m2_medio": 8871.784567239629,
+        "superficie_media": 143.0,
+        "habs_media": 3.1666666666666665
+    },
+    "Bellas Vistas": {
+        "precio_m2_medio": 4936.784879746936,
+        "superficie_media": 180.6,
+        "habs_media": 3.0
+    },
+    "Buenavista": {
+        "precio_m2_medio": 3909.916879795396,
+        "superficie_media": 87.6,
+        "habs_media": 2.2
+    },
+    "Canillejas": {
+        "precio_m2_medio": 4370.133130214185,
+        "superficie_media": 91.42857142857143,
+        "habs_media": 2.0
+    },
+    "Casco Histórico De Vallecas": {
+        "precio_m2_medio": 3403.3415783082505,
+        "superficie_media": 80.0,
+        "habs_media": 2.5555555555555554
+    },
     "Castellana": {
         "precio_m2_medio": 11405.779518043739,
         "superficie_media": 169.1764705882353,
         "habs_media": 3.1176470588235294
+    },
+    "Colina": {
+        "precio_m2_medio": 7418.260099155901,
+        "superficie_media": 172.0,
+        "habs_media": 3.2
+    },
+    "Cortes-Huertas": {
+        "precio_m2_medio": 7074.335534675115,
+        "superficie_media": 166.0,
+        "habs_media": 2.2857142857142856
+    },
+    "Cuatro Caminos": {
+        "precio_m2_medio": 8639.406568826766,
+        "superficie_media": 122.0,
+        "habs_media": 3.375
+    },
+    "El Viso": {
+        "precio_m2_medio": 10110.379573631133,
+        "superficie_media": 239.66666666666666,
+        "habs_media": 3.6666666666666665
     },
     "Embajadores-Lavapiés": {
         "precio_m2_medio": 5845.791451468273,
         "superficie_media": 77.61111111111111,
         "habs_media": 2.2777777777777777
     },
+    "Ensanche De Vallecas-Valdecarros": {
+        "precio_m2_medio": 4138.856779702147,
+        "superficie_media": 96.625,
+        "habs_media": 1.875
+    },
     "Goya": {
         "precio_m2_medio": 11787.303061300949,
         "superficie_media": 149.74193548387098,
         "habs_media": 2.774193548387097
+    },
+    "Guindalera": {
+        "precio_m2_medio": 7166.658278029189,
+        "superficie_media": 128.25,
+        "habs_media": 3.625
+    },
+    "Ibiza": {
+        "precio_m2_medio": 12081.850356184555,
+        "superficie_media": 124.83333333333333,
+        "habs_media": 2.6666666666666665
+    },
+    "Justicia-Chueca": {
+        "precio_m2_medio": 10349.830928951922,
+        "superficie_media": 127.21428571428571,
+        "habs_media": 2.0714285714285716
     },
     "Lista": {
         "precio_m2_medio": 11289.917963581014,
         "superficie_media": 142.5,
         "habs_media": 2.5625
     },
+    "Lucero": {
+        "precio_m2_medio": 3796.0440867390453,
+        "superficie_media": 73.75,
+        "habs_media": 2.5
+    },
+    "Orcasur": {
+        "precio_m2_medio": 4117.046412420975,
+        "superficie_media": 91.0,
+        "habs_media": 2.0
+    },
     "Otros": {
-        "precio_m2_medio": 6295.699740887464,
-        "superficie_media": 117.05176470588235,
-        "habs_media": 2.6588235294117646
+        "precio_m2_medio": 5884.130255550042,
+        "superficie_media": 120.43137254901961,
+        "habs_media": 2.738562091503268
+    },
+    "Pacífico": {
+        "precio_m2_medio": 6342.017543859649,
+        "superficie_media": 107.0,
+        "habs_media": 2.6
+    },
+    "Palacio": {
+        "precio_m2_medio": 8788.186725351115,
+        "superficie_media": 136.21428571428572,
+        "habs_media": 2.7857142857142856
+    },
+    "Palomeras Sureste": {
+        "precio_m2_medio": 2981.7693006993004,
+        "superficie_media": 108.6,
+        "habs_media": 3.2
+    },
+    "Pradolongo": {
+        "precio_m2_medio": 3128.385364093859,
+        "superficie_media": 107.0,
+        "habs_media": 2.4
+    },
+    "Prosperidad": {
+        "precio_m2_medio": 8528.915879442195,
+        "superficie_media": 119.6,
+        "habs_media": 2.4
+    },
+    "Pueblo Nuevo": {
+        "precio_m2_medio": 4699.750656393973,
+        "superficie_media": 73.75,
+        "habs_media": 2.375
+    },
+    "Puerta Bonita": {
+        "precio_m2_medio": 4292.335938219947,
+        "superficie_media": 85.85714285714286,
+        "habs_media": 2.5714285714285716
     },
     "Recoletos": {
         "precio_m2_medio": 14890.05844138897,
         "superficie_media": 171.56,
         "habs_media": 2.72
     },
+    "Río Rosas": {
+        "precio_m2_medio": 9239.873124553955,
+        "superficie_media": 130.71428571428572,
+        "habs_media": 3.0
+    },
+    "San Andrés": {
+        "precio_m2_medio": 2938.614175428712,
+        "superficie_media": 80.0,
+        "habs_media": 2.8
+    },
+    "San Diego": {
+        "precio_m2_medio": 4388.449609382293,
+        "superficie_media": 50.333333333333336,
+        "habs_media": 2.0
+    },
+    "San Fermín": {
+        "precio_m2_medio": 4195.167416358796,
+        "superficie_media": 81.66666666666667,
+        "habs_media": 1.8888888888888888
+    },
+    "San Isidro": {
+        "precio_m2_medio": 4145.134309738895,
+        "superficie_media": 74.83333333333333,
+        "habs_media": 2.8333333333333335
+    },
+    "Sanchinarro": {
+        "precio_m2_medio": 4762.3066062603275,
+        "superficie_media": 176.0,
+        "habs_media": 2.6666666666666665
+    },
+    "Sol": {
+        "precio_m2_medio": 9640.719590979013,
+        "superficie_media": 117.0,
+        "habs_media": 2.6666666666666665
+    },
+    "Trafalgar": {
+        "precio_m2_medio": 10431.297908484863,
+        "superficie_media": 119.0,
+        "habs_media": 2.5714285714285716
+    },
     "Universidad-Malasaña": {
         "precio_m2_medio": 8932.736791932108,
         "superficie_media": 114.71428571428571,
         "habs_media": 2.5238095238095237
+    },
+    "Valdeacederas": {
+        "precio_m2_medio": 5398.295699619388,
+        "superficie_media": 59.0,
+        "habs_media": 2.0
+    },
+    "Vallehermoso": {
+        "precio_m2_medio": 8381.536723862415,
+        "superficie_media": 164.0,
+        "habs_media": 3.6666666666666665
+    },
+    "Valverde": {
+        "precio_m2_medio": 4731.903568707992,
+        "superficie_media": 78.4,
+        "habs_media": 2.4
+    },
+    "Ventas": {
+        "precio_m2_medio": 6262.478377480172,
+        "superficie_media": 66.8,
+        "habs_media": 1.8
+    },
+    "Vicálvaro": {
+        "precio_m2_medio": 4323.823679254155,
+        "superficie_media": 110.0,
+        "habs_media": 2.6666666666666665
+    },
+    "Zofío": {
+        "precio_m2_medio": 3558.299535681001,
+        "superficie_media": 69.8,
+        "habs_media": 2.4
     }
 }
