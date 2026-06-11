@@ -74,27 +74,25 @@ def main():
     # Manejar posibles NaNs si alguna casa agrupada no tenia habitaciones informadas
     df['ratio_hab_zona'] = df['ratio_hab_zona'].fillna(1.0)
     
-    # 3.5 Target Encoding Multimodal (Estado y Calidad) — Ratio relativo al precio medio global
-    # En vez de usar el precio €/m² absoluto (que está contaminado por el barrio de cada casa),
-    # calculamos cuánto multiplica/divide cada estado respecto a la media global.
-    # Así: Lujo ~ 1.8, Buen estado ~ 1.0, A reformar ~ 0.85 (siempre ordenado lógicamente).
+    # 3.5 Ordinal Encoding Multimodal (Estado y Calidad)
+    # Codificamos de forma puramente ordinal (0, 1, 2) para que el modelo aprenda los pesos de forma
+    # natural de los datos, mientras las restricciones monotónicas de HistGB fuerzan la jerarquía lógica.
     precio_m2_global = df['precio_m2'].mean()
 
-    estado_stats = df.groupby('estado_conservacion')['precio_m2'].mean()
-    estado_encoding = {estado: float(precio / precio_m2_global) for estado, precio in estado_stats.items()}
-    
-    calidad_stats = df.groupby('calidad_materiales')['precio_m2'].mean()
-    # Filtrar posibles valores basura (ej. "Error" generado por fallos de Gemini)
-    calidad_encoding = {
-        calidad: float(precio / precio_m2_global)
-        for calidad, precio in calidad_stats.items()
-        if calidad not in ['Error', 'None', 'nan']
+    estado_encoding = {
+        "A reformar": 1,
+        "Buen estado": 2,
+        "Lujo": 3
     }
     
-    print("\n=== TARGET ENCODING MULTIMODAL (Ratio vs. media global) ===")
-    print(f"Precio m² global medio: {precio_m2_global:.0f} €/m²")
-    for estado, ratio in sorted(estado_encoding.items(), key=lambda x: x[1]):
-        print(f"  {estado}: x{ratio:.3f}")
+    calidad_encoding = {
+        "Básica": 1,
+        "Premium": 2
+    }
+    
+    print("\n=== ORDINAL ENCODING MULTIMODAL ===")
+    print(f"Estado: {estado_encoding}")
+    print(f"Calidad: {calidad_encoding}")
     
     with open(ESTADO_ENCODING_PATH, 'w', encoding='utf-8') as f:
         json.dump(estado_encoding, f, indent=4, ensure_ascii=False)

@@ -421,6 +421,7 @@ if menu_seleccionado == "🏠 Tasador Pro (Multimodal)":
                     log_pred = bundle['modelo'].predict(bundle['scaler'].transform(X_input))[0]
                     precio_base = np.expm1(log_pred)
                     precio_final = precio_base
+                        
                     precio_m2 = precio_final / m2
                     
                     # --- Configuración visual por clase predicha ---
@@ -769,27 +770,90 @@ elif menu_seleccionado == "📐 Arquitectura MLOps":
     st.markdown("<h2 style='margin-top: 0; margin-bottom: 20px; font-weight: 800; font-size: 2.2rem;'>Pipeline de Inteligencia Artificial Multimodal</h2>", unsafe_allow_html=True)
     st.markdown("<p style='color: #ffffff; font-size: 1.1rem; margin-bottom: 30px;'>Arquitectura MLOps completa que procesa texto, datos tabulares e imágenes en tiempo real.</p>", unsafe_allow_html=True)
 
-    # Paso 1
-    st.info("### 📥 1. Ingesta de Datos (Data Lake)\nUn script automático extrae propiedades y sus imágenes desde portales inmobiliarios. Los datos se limpian de NaNs y se estructuran en un Data Lake local.")
-    st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
-    
-    # Paso 2
-    st.warning("### 🤖 2. Etiquetado VLM (Google Gemini 1.5)\nPara evitar el coste del etiquetado manual, un Modelo de Lenguaje Visual (VLM) analiza miles de fotos para clasificar el estado de conservación y la calidad de los materiales, creando nuestra *Ground Truth*.")
-    st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
-
-    # Paso 3 (Columnas)
-    c_arch1, c_arch2 = st.columns(2)
-    with c_arch1:
-        st.error("### 👁️ 3A. PyTorch CNN (Visión)\nUna red neuronal **ResNet50** se entrena mediante Transfer Learning para detectar patrones arquitectónicos directamente desde los píxeles de las imágenes.")
-    with c_arch2:
-        st.success("### 📊 3B. Feature Engineering (Tabular)\nEl modelo analiza datos clásicos (barrio, m², ascensor) y utiliza Target Encoding para traducir las características cualitativas a ratios numéricos que el modelo puede comprender.")
-
-    st.markdown("<div style='text-align: center; color: #64748b; font-size: 1.5rem; margin: 10px 0;'>⬇️</div>", unsafe_allow_html=True)
-
-    # Paso 4
     st.markdown("""
-    <div style="background: linear-gradient(145deg, rgba(168, 85, 247, 0.2) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid #a855f7; padding: 25px; border-radius: 12px;">
-        <h3 style="color: #d8b4fe !important; margin-top: 0; text-align: center;">🚀 4. Fusión Multimodal (HistGradientBoosting)</h3>
+    <style>
+    .diagram-box {
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        margin: 10px auto;
+        position: relative;
+    }
+    .diagram-box h3 { margin-top: 0; font-size: 1.3rem; margin-bottom: 8px; font-weight: 800; }
+    .diagram-box p { color: #cbd5e1 !important; font-size: 0.95rem; margin-bottom: 0; }
+
+    .arrow-down {
+        text-align: center;
+        color: #64748b;
+        font-size: 2rem;
+        margin: -5px 0;
+    }
+
+    .split-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin: 10px auto;
+    }
+    .split-box {
+        flex: 1;
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    
+    .fusion-box {
+        background: linear-gradient(145deg, rgba(168, 85, 247, 0.2) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border: 1px solid #a855f7;
+        border-radius: 16px;
+        padding: 25px;
+        text-align: center;
+        margin: 10px auto;
+    }
+    .fusion-box h3 { color: #d8b4fe !important; margin-top: 0; font-weight: 800; }
+    </style>
+
+    <div class="diagram-box" style="border-top: 3px solid #3b82f6;">
+        <h3 style="color: #60a5fa !important;">📥 Ingesta de Datos (Data Lake)</h3>
+        <p>Un script automático extrae propiedades y sus imágenes desde portales inmobiliarios. Los datos se limpian de NaNs y se estructuran en un Data Lake local.</p>
+    </div>
+
+    <div class="arrow-down">⬇️</div>
+
+    <div class="diagram-box" style="border-top: 3px solid #f59e0b;">
+        <h3 style="color: #fbbf24 !important;">🤖 Etiquetado VLM (Google Gemini 1.5)</h3>
+        <p>Para evitar el coste del etiquetado manual, un Modelo de Lenguaje Visual analiza miles de fotos para clasificar el estado de conservación y la calidad de los materiales (Ground Truth).</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-around; color: #64748b; font-size: 2rem; margin: -5px 0;">
+        <span>↙️</span>
+        <span>↘️</span>
+    </div>
+
+    <div class="split-container">
+        <div class="split-box" style="border-top: 3px solid #ef4444;">
+            <h3 style="color: #f87171 !important;">👁️ PyTorch CNN (Visión)</h3>
+            <p>Una red neuronal <b>ResNet50</b> se entrena mediante Transfer Learning para detectar patrones arquitectónicos directamente desde los píxeles de las imágenes.</p>
+        </div>
+        <div class="split-box" style="border-top: 3px solid #10b981;">
+            <h3 style="color: #34d399 !important;">📊 Feature Engineering (Tabular)</h3>
+            <p>El modelo analiza datos clásicos y utiliza Ordinal Encoding para forzar jerarquías lógicas matemáticas en las variables cualitativas sin usar heurísticas de post-procesado.</p>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-around; color: #64748b; font-size: 2rem; margin: -5px 0;">
+        <span>↘️</span>
+        <span>↙️</span>
+    </div>
+
+    <div class="fusion-box">
+        <h3>🚀 Fusión Multimodal (HistGradientBoosting)</h3>
         <p style="color: #cbd5e1 !important; font-size: 1rem; text-align: center; margin-bottom: 0;">En tiempo real, la App procesa la foto del usuario (CNN) y la combina con los datos tabulares. Un algoritmo de árboles de decisión fusiona ambos mundos y genera la tasación económica final.</p>
     </div>
     """, unsafe_allow_html=True)
