@@ -612,10 +612,21 @@ elif menu_seleccionado == "📊 Dashboard de Insights":
     
     @st.cache_data
     def load_plot_data():
-        ruta_limpias = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data_pipeline", "data", "processed", "propiedades_limpias.csv")
-        ruta_etiquetadas = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data_pipeline", "data", "processed", "propiedades_etiquetadas.csv")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        cand_limpias = [
+            os.path.join(base_dir, "..", "data_pipeline", "data", "processed", "propiedades_limpias.csv"),
+            os.path.join(base_dir, "data_pipeline", "data", "processed", "propiedades_limpias.csv"),
+            os.path.join("data_pipeline", "data", "processed", "propiedades_limpias.csv"),
+        ]
+        cand_etiquetadas = [
+            os.path.join(base_dir, "..", "data_pipeline", "data", "processed", "propiedades_etiquetadas.csv"),
+            os.path.join(base_dir, "data_pipeline", "data", "processed", "propiedades_etiquetadas.csv"),
+            os.path.join("data_pipeline", "data", "processed", "propiedades_etiquetadas.csv"),
+        ]
+        ruta_limpias = next((p for p in cand_limpias if os.path.exists(p)), None)
+        ruta_etiquetadas = next((p for p in cand_etiquetadas if os.path.exists(p)), None)
         
-        if os.path.exists(ruta_limpias) and os.path.exists(ruta_etiquetadas):
+        if ruta_limpias and ruta_etiquetadas:
             df_limpias = pd.read_csv(ruta_limpias)
             df_etiq = pd.read_csv(ruta_etiquetadas)[['id_inmueble', 'estado_conservacion', 'calidad_materiales']]
             # Hacemos left join para tener todas las casas, y las que no tengan etiqueta tendrán NaN

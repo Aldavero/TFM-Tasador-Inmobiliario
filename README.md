@@ -32,7 +32,8 @@ Los resultados a continuación corresponden al conjunto de **Test (20% del datas
 ### Modelo Tabular — HistGradientBoostingRegressor
 | Métrica | Valor |
 |--------|-------|
-| **RMSE (Test Set)** | ~485,795 € |
+| **RMSE (Test Set)** | ~257,295 € |
+| **R² (Test Set)** | **0.915** |
 | **Iteraciones (árboles)** | 500 |
 | **Features utilizadas** | 13 |
 | **Split Train / Test** | 80% / 20% (random_state=42) |
@@ -64,12 +65,12 @@ Los resultados a continuación corresponden al conjunto de **Test (20% del datas
 ### Dataset
 | Parámetro | Valor |
 |-----------|-------|
-| **Total propiedades** | 553 |
+| **Total propiedades** | 835 |
 | **Fuente de datos** | Portal inmobiliario (Madrid, 2026) |
 | **Etiquetado** | Automático via Gemini VLM |
-| **Distribución de clases** | Buen estado: 358 (64.7%) · Lujo: 150 (27.1%) · A reformar: 45 (8.1%) |
-| **Precio medio** | ~984,689 € |
-| **Precio mediano** | ~625,000 € |
+| **Distribución de clases** | Buen estado: 567 (67.9%) · Lujo: 188 (22.5%) · A reformar: 80 (9.6%) |
+| **Precio medio** | ~1,025,487 € |
+| **Precio mediano** | ~620,000 € |
 
 ---
 
@@ -126,7 +127,10 @@ El proyecto sigue una arquitectura modular en tres grandes fases:
  ┃ ┣ 📜 train_tabular.py    # Entrenamiento del modelo HistGradientBoosting
  ┃ ┗ 📜 cnn_model_pesos.pth # Pesos del mejor modelo CNN (checkpoint)
  ┣ 📂 notebooks_v2/         # Cuadernos Jupyter experimentales
- ┃ ┗ 📜 1_EDA_Limpieza.ipynb # Análisis Exploratorio de Datos (EDA)
+ ┃ ┣ 📜 1_EDA_Limpieza.ipynb # Análisis Exploratorio de Datos (EDA)
+ ┃ ┣ 📜 3_Impacto_Amenidades.ipynb # Análisis del Impacto de Extras
+ ┃ ┣ 📜 05_visualizaciones_finales.ipynb # Gráficos para Memoria
+ ┃ ┗ 📜 06_evaluacion_modelo.ipynb # Evaluación final del Modelo Tabular
  ┗ 📜 README.md             # Este documento
 ```
 

@@ -14,9 +14,12 @@ __pycache__/
 .env
 data_pipeline/.env
 
-# Datos crudos y procesados (demasiado grandes)
-data_pipeline/data/
+# Datos crudos y procesados (demasiado grandes salvo los CSVs finales de la app)
+data_pipeline/data/raw/
+data_pipeline/data/interim/
+!data_pipeline/data/processed/
 !data_pipeline/data/processed/propiedades_etiquetadas.csv
+!data_pipeline/data/processed/propiedades_limpias.csv
 
 # Archivos enormes
 paquete_colab.zip
