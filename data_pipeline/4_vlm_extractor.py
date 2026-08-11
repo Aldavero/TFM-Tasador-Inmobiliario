@@ -192,8 +192,8 @@ def run_vlm_pipeline(limit=None):
             
         count += 1
         
-        # Esperar 2 segundos (el usuario ya tiene facturacion activada, no hace falta limite gratuito estricto)
-        time.sleep(2)
+        # Esperar 5 segundos para respetar el límite gratuito de 15 RPM (Peticiones por minuto) de Gemini
+        time.sleep(5)
         
         # Guardado intermedio (sin dropear nada todavia para no liar el mapping de indices)
         if count % 10 == 0:
@@ -216,5 +216,5 @@ def run_vlm_pipeline(limit=None):
     print("="*60)
 
 if __name__ == "__main__":
-    # Procesamiento masivo de todas las propiedades restantes
-    run_vlm_pipeline(limit=None)
+    # Límite de 1450 para no superar la cuota gratuita diaria de 1500 peticiones de Gemini
+    run_vlm_pipeline(limit=1450)
