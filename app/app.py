@@ -660,13 +660,22 @@ elif menu_seleccionado == "📊 Dashboard de Insights":
                     
                     color_discrete_map = {"Lujo": "#f59e0b", "Buen estado": "#10b981", "A reformar": "#ef4444", "No etiquetado": "#ffffff"}
                     
-                    fig_map = px.scatter_map(
-                        df_map, lat="lat", lon="lon", color="estado_conservacion", 
-                        hover_name="barrio_limpio", hover_data=["precio_limpio", "m2"],
-                        color_discrete_map=color_discrete_map, zoom=11, height=500,
-                        map_style="carto-darkmatter",
-                        opacity=0.5 if mostrar_todas else 0.9
-                    )
+                    try:
+                        fig_map = px.scatter_map(
+                            df_map, lat="lat", lon="lon", color="estado_conservacion", 
+                            hover_name="barrio_limpio", hover_data=["precio_limpio", "m2"],
+                            color_discrete_map=color_discrete_map, zoom=11, height=500,
+                            map_style="carto-darkmatter",
+                            opacity=0.5 if mostrar_todas else 0.9
+                        )
+                    except AttributeError:
+                        fig_map = px.scatter_mapbox(
+                            df_map, lat="lat", lon="lon", color="estado_conservacion", 
+                            hover_name="barrio_limpio", hover_data=["precio_limpio", "m2"],
+                            color_discrete_map=color_discrete_map, zoom=11, height=500,
+                            mapbox_style="carto-darkmatter",
+                            opacity=0.5 if mostrar_todas else 0.9
+                        )
                     fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
                 
                 # --- SISTEMA DE PESTAÑAS PARA LOS MAPAS ---
