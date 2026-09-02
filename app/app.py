@@ -657,36 +657,54 @@ elif menu_seleccionado == "📊 Dashboard de Insights":
                     mostrar_todas = st.toggle("⚪ Mostrar casas NO etiquetadas (Puntos Blancos)", value=False)
                     if not mostrar_todas:
                         df_map = df_map[df_map['estado_conservacion'] != 'No etiquetado']
-                    color_discrete_map = {"Lujo": "#f59e0b", "Buen estado": "#10b981", "A reformar": "#ef4444", "No etiquetado": "#ffffff"}
-                    try:
-                        import traceback
-                        try:
-                            fig_map = px.scatter_map(
-                                df_map, lat="lat", lon="lon", color="estado_conservacion", 
-                                hover_name="barrio_limpio", hover_data=["precio_limpio", "m2"],
-                                color_discrete_map=color_discrete_map, zoom=11, height=500,
-                                map_style="carto-darkmatter",
-                                opacity=0.5 if mostrar_todas else 0.9
-                            )
-                        except AttributeError:
-                            fig_map = px.scatter_mapbox(
-                                df_map, lat="lat", lon="lon", color="estado_conservacion", 
-                                hover_name="barrio_limpio", hover_data=["precio_limpio", "m2"],
-                                color_discrete_map=color_discrete_map, zoom=11, height=500,
-                                mapbox_style="carto-darkmatter",
-                                opacity=0.5 if mostrar_todas else 0.9
-                            )
-                        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
                         
-                        # --- SISTEMA DE PESTAÑAS PARA LOS MAPAS ---
-                        tab_2d, tab_3d = st.tabs(["🗺️ Mapa 2D (Clásico)", "🏙️ Mapa 3D Hexagonal (Densidad)"])
-                        
-                        with tab_2d:
-                            st.plotly_chart(fig_map, width='stretch')
-                    except Exception as e:
-                        st.error(f"Error renderizando mapa 2D: {str(e)}")
-                        st.code(traceback.format_exc())
-                        tab_3d = st.container() # Fallback para que no falle el with tab_3d
+                    # Reemplazamos Plotly por PyDeck (ScatterplotLayer) para el mapa 2D debido a problemas de renderizado en la nube
+                    color_mapping = {
+                        "Lujo": [245, 158, 11],          # #f59e0b
+                        "Buen estado": [16, 185, 129],   # #10b981
+                        "A reformar": [239, 68, 68],     # #ef4444
+                        "No etiquetado": [255, 255, 255] # #ffffff
+                    }
+                    df_map['color_rgb'] = df_map['estado_conservacion'].map(color_mapping)
+                    # Convert to lists for pydeck
+                    df_map = df_map.dropna(subset=['color_rgb'])
+                    
+                    layer_2d = pdk.Layer(
+                        'ScatterplotLayer',
+                        data=df_map,
+                        get_position='[lon, lat]',
+                        get_color='color_rgb',
+                        get_radius=150,
+                        pickable=True,
+                        opacity=0.6 if mostrar_todas else 0.9,
+                        stroked=True,
+                        filled=True,
+                        radius_scale=1,
+                        radius_min_pixels=3,
+                        radius_max_pixels=15,
+                        line_width_min_pixels=1
+                    )
+                    
+                    view_state_2d = pdk.ViewState(
+                        longitude=df_map['lon'].mean() if not df_map.empty else -3.7,
+                        latitude=df_map['lat'].mean() if not df_map.empty else 40.4,
+                        zoom=11,
+                        pitch=0
+                    )
+                    
+                    r_2d = pdk.Deck(
+                        layers=[layer_2d],
+                        initial_view_state=view_state_2d,
+                        map_provider="carto",
+                        map_style="dark",
+                        tooltip={"html": "<b>Precio Estimado:</b> {precio_limpio} €<br/><b>Tamaño:</b> {m2} m²<br/><b>Estado:</b> {estado_conservacion}", "style": {"backgroundColor": "steelblue", "color": "white"}}
+                    )
+                    
+                    # --- SISTEMA DE PESTAÑAS PARA LOS MAPAS ---
+                    tab_2d, tab_3d = st.tabs(["🗺️ Mapa 2D (Clásico)", "🏙️ Mapa 3D Hexagonal (Densidad)"])
+                    
+                    with tab_2d:
+                        st.pydeck_chart(r_2d, width='stretch')
                     
                     with tab_3d:
                         st.markdown("<p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;'>Las columnas hexagonales representan la densidad de oferta inmobiliaria. Puedes rotar el mapa manteniendo pulsada la tecla <b>Ctrl/Cmd + Clic izquierdo</b>.</p>", unsafe_allow_html=True)
