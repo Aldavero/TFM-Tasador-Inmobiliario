@@ -689,43 +689,43 @@ elif menu_seleccionado == "📊 Dashboard de Insights":
                         tab_3d = st.container() # Fallback para que no falle el with tab_3d
                     
                     with tab_3d:
-                    st.markdown("<p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;'>Las columnas hexagonales representan la densidad de oferta inmobiliaria. Puedes rotar el mapa manteniendo pulsada la tecla <b>Ctrl/Cmd + Clic izquierdo</b>.</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;'>Las columnas hexagonales representan la densidad de oferta inmobiliaria. Puedes rotar el mapa manteniendo pulsada la tecla <b>Ctrl/Cmd + Clic izquierdo</b>.</p>", unsafe_allow_html=True)
                     
-                    df_hex = df_map.dropna(subset=['lat', 'lon', col_precio])
+                        df_hex = df_map.dropna(subset=['lat', 'lon', col_precio])
                     
-                    layer = pdk.Layer(
-                        'HexagonLayer',
-                        data=df_hex,
-                        get_position='[lon, lat]',
-                        radius=150, # Reducimos el radio para más definición
-                        elevation_scale=100, # Aumentamos para ver bien el skyline 3D
-                        elevation_range=[0, 1500],
-                        pickable=True,
-                        extruded=True,
-                        auto_highlight=True,
-                        get_elevation_weight=col_precio,
-                        elevation_aggregation='"MEAN"'
-                    )
+                        layer = pdk.Layer(
+                            'HexagonLayer',
+                            data=df_hex,
+                            get_position='[lon, lat]',
+                            radius=150, # Reducimos el radio para más definición
+                            elevation_scale=100, # Aumentamos para ver bien el skyline 3D
+                            elevation_range=[0, 1500],
+                            pickable=True,
+                            extruded=True,
+                            auto_highlight=True,
+                            get_elevation_weight=col_precio,
+                            elevation_aggregation='"MEAN"'
+                        )
 
-                    view_state = pdk.ViewState(
-                        longitude=df_hex['lon'].mean(),
-                        latitude=df_hex['lat'].mean(),
-                        zoom=11.5,
-                        pitch=55, # Inclinación 3D
-                        bearing=-15 # Rotación
-                    )
+                        view_state = pdk.ViewState(
+                            longitude=df_hex['lon'].mean(),
+                            latitude=df_hex['lat'].mean(),
+                            zoom=11.5,
+                            pitch=55, # Inclinación 3D
+                            bearing=-15 # Rotación
+                        )
 
-                    r = pdk.Deck(
-                        layers=[layer], 
-                        initial_view_state=view_state, 
-                        map_provider="carto",
-                        map_style="dark", 
-                        tooltip={"html": "<b>Precio Medio Estimado:</b> {elevationValue} €<br/><b>Concentración:</b> {colorValue} inmuebles", "style": {"backgroundColor": "steelblue", "color": "white"}}
-                    )
-                    st.pydeck_chart(r, width='stretch')
-                    with st.expander("🔬 Inteligencia Geoespacial"):
-                        st.write("Cada coordenada ha sido extraída usando expresiones regulares (Regex) sobre los datos estáticos, parseando las llamadas a las APIs de mapas originales. Los colores reflejan el etiquetado visual automático que generó la IA (Gemini VLM).")
-                st.markdown("<br>", unsafe_allow_html=True)
+                        r = pdk.Deck(
+                            layers=[layer], 
+                            initial_view_state=view_state, 
+                            map_provider="carto",
+                            map_style="dark", 
+                            tooltip={"html": "<b>Precio Medio Estimado:</b> {elevationValue} €<br/><b>Concentración:</b> {colorValue} inmuebles", "style": {"backgroundColor": "steelblue", "color": "white"}}
+                        )
+                        st.pydeck_chart(r, width='stretch')
+                        with st.expander("🔬 Inteligencia Geoespacial"):
+                            st.write("Cada coordenada ha sido extraída usando expresiones regulares (Regex) sobre los datos estáticos, parseando las llamadas a las APIs de mapas originales. Los colores reflejan el etiquetado visual automático que generó la IA (Gemini VLM).")
+                    st.markdown("<br>", unsafe_allow_html=True)
 
         c_chart1, c_chart2 = st.columns(2)
         
