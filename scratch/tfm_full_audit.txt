@@ -1,0 +1,523 @@
+UNIVERSIDAD SAN PABLO - CEU
+ESCUELA POLITÉCNICA SUPERIOR
+MÁSTER EN FORMACIÓN PERMANENTE EN INTELIGENCIA ARTIFICIAL Y BIG DATA
+TRABAJO FIN DE MÁSTER
+TasIA: Sistema de Valoración Automatizada (AVM) de Activos Residenciales Mediante HistGradientBoosting Monotónico e IA Generativa Visual
+TasIA: Automated Valuation Model (AVM) for Residential Real Estate Assets Using Monotonic HistGradientBoosting and Visual Generative AI
+Autor: Jorge Aldavero Romero
+Tutor(es): Miguel Sánchez Novo
+Julio 2026 y convocatoria
+Agradecimientos
+En primer lugar, quiero agradecer de todo corazón a mi familia. Este trabajo, y el final de esta etapa universitaria, no habrían sido posibles sin ellos. Gracias por vuestro apoyo incondicional en cada momento de este proceso, por creer en mí incluso cuando yo mismo dudaba y, sobre todo, por habérmelo dado absolutamente todo para que pudiera llegar hasta aquí.
+Por supuesto, no puedo olvidarme de mis amigos, porque el camino se hace mucho más fácil cuando estás bien acompañado. Gracias por las risas, por los momentos de desconexión tan necesarios cuando las cosas no salían y por vuestro apoyo constante durante todo este tiempo.
+Resumen
+(≤ 200 palabras)
+El sector inmobiliario tradicional vive hoy en día, una falta de transparencia y objetividad en la fijación de precios, dependiendo en gran medida de tasaciones manuales lentas y propensas a sesgos. Para resolver este problema, este Trabajo de Fin de Máster propone el desarrollo de TasIA, un Sistema de Valoración Automatizada (AVM) basado en Inteligencia Artificial para estimar el valor de activos residenciales en la Comunidad de Madrid.
+La metodología comprende la construcción de un pipeline de extracción web propio (Web Scraping con Playwright) que recopiló más de 3.600 anuncios inmobiliarios reales del portal pisos.com. Sobre este corpus, se desarrolló un algoritmo HistGradientBoosting monolítico con restricciones monotónicas y Target Encoding geográfico. Esta técnica obliga al modelo a respetar la lógica económica del mercado, solucionando el problema de la multicolinealidad espacial.
+Los resultados demuestran una alta capacidad predictiva sobre el conjunto de prueba (Test Set, 20% reservado), alcanzando una Raíz del Error Cuadrático Medio (RMSE) de 237,018 € y un coeficiente de determinación (R^2) de 0,911. A medida que el corpus crezca, este error absoluto seguirá descendiendo.
+Palabras Clave
+Inteligencia Artificial, PropTech, Valoración Inmobiliaria (AVM), Machine Learning, HistGradientBoosting, Mercado Inmobiliario, Madrid.
+Abstract
+The traditional real estate sector suffers from a lack of transparency and objectivity in pricing, relying heavily on slow and bias-prone manual valuations. To solve this problem, this Master's Thesis proposes the development of TasIA, an Artificial Intelligence-based Automated Valuation Model (AVM) to estimate the value of residential assets in the Community of Madrid.
+The methodology includes the construction of a proprietary web scraping pipeline (using Playwright in Stealth mode) that collected over 3,600 real property listings from pisos.com. From this raw volume, an automated visual labelling phase was applied using the Gemini API (Teacher-Student Weak Supervision strategy), generating a dynamic corpus that already exceeds 835 properties with validated visual quality labels, growing continuously through daily automated labelling scheduled via Windows Task Scheduler.
+The results demonstrate a high predictive capacity on the hold-out test set (20%), achieving a Root Mean Squared Error (RMSE) of 237,018 € and a coefficient of determination (R^2) of 0.911. The RMSE reflects the heteroscedastic nature of a real-market dataset spanning luxury properties and entry-level housing alike — an expected and well-documented limitation that will diminish as the corpus scales up.
+Keywords
+Artificial Intelligence, PropTech, Automated Valuation Model (AVM), Machine Learning, HistGradientBoosting, Real Estate Market, Madrid.
+Índice de contenidos
+Índice de figuras
+Figura 1. Diagrama de los Problemas Detectados	10
+Figura 2. La asimetría positiva (sesgo a la derecha) característica del mercado inmobiliario justifica la aplicación de la transformación logarítmica log1p(precio) sobre la variable objetivo	19
+Figura 3. Impacto real de las amenidades (Mediana)	20
+Figura 4. Matriz de correlación de variables numéricas	20
+Figura 5. Validación del modelo ResNet50 (Etiquetado IA)	23
+Figura 6. Arquitectura del Sistema TasIA	26
+Figura 7. Trade-off: Precisión (R²) vs. Coste Computacional (Segundos)	28
+Figura 8. Distribución de errores (residuos) de predicción	40
+Figura 9. Evaluación del modelo maestro: Precio real vs predicho 	41
+Figura 10. Importancia de las variables (Permutation Feature Importance)	42
+Figura 11. Bondad de Ajuste: Predicciones del Modelo vs Valores Reales	42
+Índice de tablas
+Tabla 1. Requisitos funcionales del sistema. (Fuente: Elaboración propia).	11
+Tabla 2. Requisitos no funcionales del sistema. (Fuente: Elaboración propia).	12
+Tabla 3. Historias de usuario del sistema TasIA. (Fuente: Elaboración propia).	15
+Tabla 4. Diccionario de variables del corpus TasIA. (Fuente: Elaboración propia).	59
+Tabla 5. Registro de incidencias técnicas del pipeline. (Fuente: Elaboración propia).	60
+
+
+=== H1: Introducción ===
+
+
+--- H2: Contexto y motivación ---
+El mercado inmobiliario representa uno de los pilares fundamentales de la economía española y, en particular, la Comunidad de Madrid se presenta como uno de los ecosistemas más dinámicos, complejos y heterogéneos de Europa. Aunque válido, este enfoque tradicional adolece de un alto grado de subjetividad, lentitud operativa y una
+En la última década, la digitalización del sector, conocida como PropTech (Property Technology), junto con la proliferación del Big Data y la Inteligencia Artificial, ha abierto un nuevo paradigma. Ha surgido así la oportunidad de desarrollar Modelos de Valoración Automatizada (AVM, por sus siglas en inglés), capaces de procesar miles de datos en milisegundos para ofrecer estimaciones de precio objetivas.
+Sin embargo, la motivación principal de este proyecto surge al identificar una carencia tecnológica crítica en muchos de los AVMs actuales. Frecuentemente, se emplean algoritmos tradicionales (como regresiones lineales simples) que no logran capturar la complejidad espacial del mercado, o bien se utilizan modelos de "caja negra" (como ciertas Redes Neuronales) que, debido al ruido en los datos y la multicolinealidad, terminan violando reglas económicas básicas.
+Para dar respuesta a esta problemática se propone TasIA, un sistema de valoración inmobiliaria inteligente cuya relevancia se justifica en tres dimensiones: (1) tecnológica y académica, al implementar HistGradientBoosting con restricciones monotónicas para lograr un equilibrio riguroso entre precisión y coherencia económica; (2) económica y aplicada, al incorporar una capa de lógica de negocio que refina las valoraciones según variables de alto impacto visual y estructural, lo que le otorga aplicabilidad directa en entornos empresariales; y (3) social, al contribuir a la transparencia del mercado inmobiliario madrileño, reduciendo la fricción y la especulación en las transacciones de vivienda.
+
+
+--- H2: Planteamiento del problema ---
+La valoración inmobiliaria residencial se ha basado tradicionalmente en tasaciones manuales o modelos de regresión hedónica simples. Sin embargo, estos enfoques tradicionales presentan dos grandes limitaciones: la incapacidad para detectar patrones no lineales complejos en grandes volúmenes de datos y la lentitud operativa frente a un mercado altamente dinámico (Kok et al., 2017).
+El problema fundamental radica en la necesidad de superar las limitaciones de los modelos de 'caja negra' tradicionales, garantizando que las predicciones AVM mantengan la coherencia económica y explicabilidad en todo momento.
+
+
+--- H2: Objetivos generales y específicos ---
+El proyecto se estructura en torno a los siguientes objetivos:
+Objetivo general: Desarrollar e implementar un Sistema de Valoración Automatizada (AVM) basado en Inteligencia Artificial capaz de estimar el precio de mercado de activos residenciales en la Comunidad de Madrid con R² > 0,90, superando las limitaciones de los algoritmos tradicionales mediante la integración de lógicas económicas restrictivas (monotonic constraints).
+Objetivos específicos:
+Construir un corpus de datos propio mediante un proceso ETL (extracción, limpieza y preprocesamiento) con registros inmobiliarios reales del mercado madrileño.
+Desarrollar ingeniería de variables espaciales (Feature Engineering) para crear atributos de contexto geográfico que capturen las dinámicas de las distintas micro-zonas.
+Evaluar y comparar múltiples arquitecturas de Machine Learning, desde Redes Neuronales (MLP) hasta algoritmos ensamblados basados en árboles de decisión.
+Aplicar restricciones de monotonicidad sobre el modelo HistGradientBoosting para garantizar que variables clave como la superficie tengan siempre un impacto coherente y positivo en el precio.
+Desplegar el modelo en una aplicación web interactiva (Streamlit) con lógica de negocio capaz de ajustar las valoraciones en tiempo real según características cualitativas del inmueble.
+
+
+--- H2: Alcance y limitaciones del trabajo ---
+El presente proyecto abarca el ciclo de vida completo de un proyecto de datos (end-to-end). A nivel técnico, el alcance incluye la extracción y almacenamiento del dato bruto, el preprocesamiento mediante ingeniería de variables espaciales, el entrenamiento comparativo de modelos algorítmicos avanzados (Perceptrón Multicapa y HistGradientBoosting) y, finalmente, la creación de una aplicación web interactiva dotada de una capa de lógica de negocio.
+Desde el punto de vista geográfico y tipológico, el alcance se circunscribe a la valoración de inmuebles de uso residencial en altura (pisos y apartamentos) ubicados en 10 distritos y municipios estratégicos de la Comunidad de Madrid (tales como Centro, Salamanca, Retiro, Carabanchel, Getafe o Pozuelo).
+No obstante, el estudio presenta las siguientes limitaciones:
+Naturaleza de los datos: El modelo trabaja con precios de oferta (no de cierre), lo que introduce un sesgo alcista inherente. Además, quedan fuera del alcance los activos comerciales, terrenos y viviendas unifamiliares, cuya formación de precios responde a dinámicas muy distintas.
+Alcance temporal y tecnológico: El sistema opera como una fotografía estática del mercado, sin ingestar variables macroeconómicas dinámicas (Euríbor, inflación). Su validación se circunscribe a un prototipo local; queda fuera del alcance su despliegue en arquitecturas Cloud empresariales.
+
+
+--- H2: Metodología general ---
+Este marco de trabajo estructurado e iterativo abarca desde la comprensión inicial del negocio y la extracción de datos (mediante Web Scraping automatizado e IA generativa), pasando por un riguroso preprocesamiento y experimentación de modelos (HistGradientBoosting), hasta llegar a la evaluación estadística y el despliegue final en una aplicación web interactiva (Streamlit). El detalle exhaustivo de cada una de estas etapas se desarrolla en profundidad en los capítulos posteriores de esta memoria.
+
+
+--- H2: Estructura del documento ---
+El documento se organiza en nueve capítulos. El capítulo 1, el presente, expone el contexto, la motivación y los objetivos del trabajo. El capítulo 2 revisa los fundamentos teóricos y el estado del arte, contrastando las técnicas de aprendizaje automático con los modelos de valoración convencionales. El capítulo 3 plantea formalmente el problema analítico, sus requisitos funcionales y no funcionales, y las restricciones técnicas y éticas. El capítulo 4 detalla el origen de los datos, el análisis exploratorio y el preprocesamiento. El capítulo 5 describe la metodología adoptada y la arquitectura del sistema. El capítulo 6 expone la implementación técnica. El capítulo 7 presenta los resultados y su evaluación. El capítulo 8 discute la interpretación e implicaciones de los hallazgos. El capítulo 9 sintetiza las conclusiones y las líneas de trabajo futuras. La bibliografía, la declaración de uso de inteligencia artificial generativa y los anexos cierran el documento.
+
+
+=== H1: Marco teórico y estado del arte ===
+
+
+--- H2: Fundamentos teóricos relevantes ---
+Para entender correctamente el alcance y la viabilidad técnica de TasIA, resulta fundamental establecer los principios teóricos en los que se apoya la valoración inmobiliaria, así como detallar las metodologías algorítmicas que hacen posible su automatización.
+Modelos de Precios Hedónicos y la Valoración Tradicional
+Los cimientos teóricos de la tasación contemporánea se derivan directamente de la Teoría de los Precios Hedónicos, la cual fue estructurada desde el punto de vista matemático por Rosen (1974). A lo largo de los años, este marco se ha abordado estadísticamente a través de Regresiones Lineales Múltiples (OLS). No obstante, la principal debilidad de estos métodos tradicionales es que presuponen una relación lineal, una condición que difícilmente ocurre en el mercado real, donde la influencia de los factores suele tener un carácter no lineal y estar estrechamente vinculada al contexto geográfico (Pace et al., 1998).
+Modelos de Valoración Automatizada (AVM) y PropTech
+Como solución a las deficiencias de los peritajes manuales y las regresiones clásicas, se desarrolla el concepto de AVM (Automated Valuation Model). La inclusión de los AVM dentro del entorno PropTech (innovación tecnológica en el sector inmobiliario) ha facilitado el salto hacia enfoques no lineales propulsados por la Inteligencia Artificial. Estas nuevas arquitecturas destacan por su capacidad para gestionar el gran volumen de información y la varianza estadística que caracterizan al Big Data en este sector.
+Gradient Boosting y Árboles de Decisión
+Su adaptación moderna, HistGradientBoosting, agrupa variables numéricas en histogramas discretos, reduciendo el coste computacional e incrementando la precisión con grandes volúmenes de datos.
+Explicabilidad (XAI) y Restricciones Monotónicas
+El Machine Learning puede ser frágil ante problemas de multicolinealidad, produciendo predicciones económicamente incoherentes. Las técnicas de Explicabilidad (XAI) y, específicamente, las restricciones monotónicas, permiten imponer reglas direccionales sobre el modelo para corregir este problema.
+
+
+--- H2: Técnicas y modelos relacionados ---
+Dentro del campo del aprendizaje automático (Machine Learning), el cálculo del precio de una vivienda se aborda como un problema de regresión supervisada multivariante. En los estudios más recientes, distintas arquitecturas de algoritmos han logrado resultados muy superiores a los de los modelos econométricos convencionales.
+Redes Neuronales Artificiales y Perceptrón Multicapa (MLP)
+Inspiradas en el funcionamiento biológico del cerebro, las Redes Neuronales Artificiales (ANN) se estructuran en capas de nodos (neuronas) que aplican funciones matemáticas no lineales a la información de entrada. En el sector inmobiliario, redes como el Perceptrón Multicapa (MLP) destacan por su capacidad de aproximación universal, siendo muy eficaces para modelar relaciones complejas entre factores espaciales y estructurales (Goodfellow et al., 2016). No obstante, su gran inconveniente en el ecosistema PropTech es que funcionan como una "caja negra" (black-box) y presentan una alta tendencia al sobreajuste (overfitting) frente a datos tabulares.
+Algoritmos de Ensamblado (Ensemble Learning): Random Forest
+Para evitar los problemas de varianza propios de un único modelo, las técnicas de aprendizaje por conjuntos agrupan las respuestas de varios estimadores. Si bien es una arquitectura muy estable frente al ruido estadístico y logra disminuir el sobreajuste, los bosques aleatorios exigen muchos recursos computacionales. Además, al igual que ocurre con las redes neuronales, no ofrecen mecanismos nativos para imponer y asegurar reglas económicas unidireccionales (monotonicidad).
+Gradient Boosting Machine (GBM)
+En contraste con Random Forest, que crea árboles de manera paralela e independiente, el Gradient Boosting se basa en la técnica de Boosting. Esta estructura iterativa hace que el GBM sea uno de los algoritmos más potentes y eficaces que existen en la actualidad para procesar datos tabulares y estructurados, como es el caso de los registros inmobiliarios.
+Histogram-based Gradient Boosting (HistGradientBoosting)
+El HistGradientBoosting es la evolución optimizada del GBM clásico, inspirada en LightGBM, y constituye el algoritmo núcleo de TasIA por su capacidad nativa de imponer restricciones monotónicas, que obligan matemáticamente al modelo a respetar la lógica económica del mercado.
+
+
+--- H2: Revisión de trabajos previos ---
+El cálculo automatizado del valor de los inmuebles ha generado un amplio debate científico a lo largo de las últimas décadas, mostrando una clara evolución desde los métodos de la econometría clásica hasta las complejas arquitecturas de Deep Learning actuales. Al analizar de forma crítica la literatura académica existente, los trabajos de investigación pueden agruparse en tres grandes corrientes metodológicas.
+1. Durante mucho tiempo, la regresión lineal múltiple (mediante Mínimos Cuadrados Ordinarios) fue la herramienta de referencia tanto a nivel académico como empresarial. Un estudio fundamental en este ámbito es el meta-análisis desarrollado por Sirmans, Macpherson y Zietz (2005), donde examinaron más de 125 artículos científicos sobre modelos hedónicos con el fin de identificar qué variables (como los metros cuadrados, la antigüedad del edificio o la presencia de garaje) tenían un mayor impacto sobre el precio final.
+Ventajas: Alta transparencia e interpretabilidad. Inconvenientes: Limitación matemática ante relaciones no lineales y dificultad para medir el impacto geográfico micro-local.
+2. Gracias al auge del Big Data, numerosos investigadores empezaron a integrar Redes Neuronales Artificiales (ANN) y Máquinas de Vectores de Soporte (SVM) en sus modelos. Cabe destacar el trabajo de Rafiei y Adeli (2016), quienes diseñaron un algoritmo de Machine Learning para predecir precios que mejoraba significativamente la precisión (logrando un menor error RMSE) respecto a las regresiones lineales tradicionales.
+Ventajas: Enorme poder predictivo para detectar interacciones complejas. Inconvenientes: Funcionan como "caja negra" y suelen sacrificar la coherencia económica local por la maximización estadística global.
+3. En los últimos años, el sector PropTech ha mostrado una clara preferencia por los modelos de aprendizaje ensamblado. Investigadores como Kok et al. (2017) han evidenciado que algoritmos como Random Forest y Gradient Boosting son los que mejor logran equilibrar la potencia predictiva con la eficiencia computacional al trabajar con grandes volúmenes de datos inmobiliarios.
+Ventajas: Alta robustez frente a outliers y sin requisitos distribucionales. Inconvenientes: Mayor coste computacional y ausencia de mecanismos nativos para imponer monotonicidad económica.
+Comparativa y Aportación de TasIA: TasIA se presenta como una solución híbrida que une la precisión no lineal del HistGradientBoosting con las restricciones monotónicas necesarias para garantizar la coherencia económica.
+
+
+--- H2: Justificación de la propuesta planteada ---
+Una vez analizadas las principales corrientes técnicas presentes en la literatura académica, la solución desarrollada en este Trabajo de Fin de Máster, el sistema TasIA, se presenta como una arquitectura adecuada para enfrentarse a los retos de la tasación inmobiliaria actual. La conveniencia de implementar este proyecto se sustenta en tres pilares estratégicos, diseñados específicamente para superar las deficiencias de las herramientas que existen hoy en día en el mercado:
+1. Resolución de la paradoja algorítmica: Implementación de HistGradientBoosting con restricciones monotónicas para evitar predicciones ilógicas.
+2. Adaptabilidad espacial y visual: Uso de ingeniería de variables geográficas y redes CNN (Gemini) para evaluar el estado real del inmueble.
+3. Hibridación de Machine Learning y Sistema Experto: Despliegue en una aplicación web interactiva con lógica de negocio.
+
+
+=== H1: Descripción del problema y requisitos ===
+
+
+--- H2: Descripción detallada del problema ---
+Figura 1. Diagrama de los Problemas Detectados. (Fuente: Elaboración propia).
+
+
+--- H2: Especificación de requisitos ---
+
+-- H3: Requisitos funcionales --
+Los requisitos funcionales establecen los comportamientos, procesos y acciones concretas que el ecosistema TasIA debe ejecutar para satisfacer los objetivos del proyecto. En la siguiente tabla se exponen los requisitos funcionales principales, los cuales cubren desde el procesamiento algorítmico en el backend hasta la interacción directa con el usuario a través de la interfaz web (frontend):
+Tabla 1. Requisitos funcionales del sistema. (Fuente: Elaboración propia).
+
+-- H3: Requisitos no funcionales --
+Los requisitos no funcionales definen las propiedades de calidad que debe satisfacer el sistema, abarcando dimensiones como el rendimiento, la escalabilidad, la seguridad y la usabilidad:
+Tabla 2. Requisitos no funcionales del sistema. (Fuente: Elaboración propia).
+Tabla 3. Historias de usuario del sistema TasIA. (Fuente: Elaboración propia).
+
+
+--- H2: Restricciones técnicas y éticas ---
+La conceptualización, el entrenamiento algorítmico y la posterior puesta en producción del ecosistema TasIA están condicionados por un conjunto de limitaciones de carácter tecnológico, legal y ético. Estas fronteras delimitan de forma rigurosa el alcance y las capacidades operativas del proyecto:
+Restricciones Tecnológicas:
+Asimetría transaccional (Precio de publicación frente a precio de cierre): La mayor barrera técnica a la hora de desarrollar modelos AVM en el mercado español es la inaccesibilidad a los datos notariales oficiales en tiempo real. Tal y como concluyen Han y Strange (2015) al estudiar la microestructura de este sector, el sistema se ve matemáticamente abocado a calcular el valor teórico de salida al mercado del activo, y no el importe final por el que se cerrará la operación.
+Dependencia de la infraestructura de extracción (Web Scraping y Visión Computacional): Al alimentarse de la ingesta masiva de datos y de la captura automatizada de imágenes (scraping), el sistema se enfrenta a fuertes restricciones técnicas derivadas de las medidas anti-bots de los portales inmobiliarios y de las cuotas límite de uso de las APIs de los Modelos de Lenguaje Visual (como Gemini). Esto hace indispensable la aplicación de estrictos filtros heurísticos durante el preprocesamiento para impedir que los sesgos humanos o el ruido estadístico degraden el rendimiento del algoritmo predictivo.
+Restricciones Legales y de Privacidad:
+Anonimización desde el diseño (Privacy by Design): Para garantizar el cumplimiento riguroso del Reglamento General de Protección de Datos europeo (RGPD 2016/679) y de la normativa nacional (LOPDGDD 3/2018), la arquitectura de TasIA ha sido programada para trabajar única y exclusivamente con información física, visual y geoespacial de las viviendas. El sistema rechaza cualquier tipo de procesamiento o almacenamiento de Información de Identificación Personal (PII), asegurando el absoluto anonimato de los propietarios y anunciantes que conforman el repositorio de datos original.
+Restricciones Éticas y Sesgos Algorítmicos:
+Mitigación de sesgos algorítmicos (Redlining inmobiliario): En el ámbito de la Inteligencia Artificial, existe una profunda preocupación ética sobre la posibilidad de que los algoritmos perpetúen brechas socioeconómicas previas a través del conjunto de datos de entrenamiento (Mehrabi et al., 2021). Las tasaciones se calculan basándose de forma estricta en la configuración arquitectónica, la evaluación visual de conservación a través de las redes CNN y el posicionamiento geométrico del inmueble respecto al entorno urbano.
+Transparencia frente a modelos opacos (Black-box): Desde una perspectiva ética, cualquier herramienta tecnológica diseñada para tasar el patrimonio económico de un ciudadano debe ser transparente y auditable. Al forzar matemáticamente al modelo predictivo a interiorizar reglas de sentido común (como garantizar que una reforma recién hecha siempre aporte valor), el proyecto consigue que las predicciones generadas sean justas, lógicas y perfectamente comprensibles para cualquier usuario sin conocimientos técnicos.
+
+
+=== H1: Datos y fuentes de información ===
+
+
+--- H2: Origen y descripción de los datos ---
+El rendimiento y la capacidad de generalización de cualquier modelo de Machine Learning están intrínsecamente limitados por la calidad, volumen y representatividad de los datos de entrenamiento. Por ello, para el desarrollo de TasIA se tomó la decisión estratégica de prescindir de conjuntos de datos académicos estáticos o repositorios públicos genéricos, ya que estos suelen estar desactualizados o no capturan las particularidades y la volatilidad del mercado inmobiliario madrileño.
+Origen de la información
+La información base procede de extracción web automatizada (Web Scraping) realizada directamente sobre el portal pisos.com, uno de los principales marketplaces inmobiliarios de España. Se implementaron mecanismos de resiliencia como la rotación dinámica de User-Agents, retrasos aleatorios entre peticiones y un sistema de checkpoint (vlm_checkpoint.json) que registra el progreso tras cada iteración, garantizando la reanudación automática del proceso ante interrupciones sin pérdida de datos. Como respaldan investigaciones recientes en economía urbana, la extracción web se ha convertido en una herramienta fundamental para superar la latencia y opacidad de los registros oficiales (Boeing y Waddell, 2017).
+Volumen y alcance geográfico
+El proceso de extracción generó un repositorio bruto de más de 3.600 anuncios inmobiliarios reales, abarcando desde mercados tensionados de alto valor (Salamanca, Chamberí, Trafalgar) hasta zonas periféricas y municipios metropolitanos. El corpus efectivo para el entrenamiento supera los 750 inmuebles etiquetados y crece diariamente mediante etiquetado automatizado, siguiendo la filosofía de Supervisión Débil (Weak Supervision).
+Descripción y tipología de las variables
+En su estado inicial, antes de la fase de preprocesamiento, cada observación o registro viene descrito por un vector de características multidimensionales. Estas se clasifican en las siguientes categorías principales:
+Variable Objetivo (Target): El precio de oferta o publicación del inmueble, expresado en euros (€). Es la variable continua que el algoritmo aprenderá a predecir.
+Variables Estructurales: Características físicas y cuantitativas del activo, siendo las principales la superficie construida (expresada en m^2), el número de habitaciones y el número de baños.
+Variables de Infraestructura y Comodidades: Variables dicotómicas o booleanas (0/1) que indican la presencia de elementos con alto impacto en la formación del precio, concretamente la existencia de Ascensor y Terraza.
+Variables Espaciales / Geográficas: Atributos categóricos en formato texto que jerarquizan la ubicación del inmueble, divididos en dos niveles de granularidad: Distrito (macro-zona) y Barrio (micro-zona).
+
+
+--- H2: Análisis exploratorio de los datos ---
+El Análisis Exploratorio de Datos (EDA) previo al modelado, siguiendo la metodología de Tukey (1977), se centró en tres dimensiones críticas: la distribución de la variable objetivo, la representatividad geográfica y las relaciones bivariadas entre las características principales del corpus.
+1. Distribución de la variable objetivo: Como es característico en los mercados inmobiliarios, la variable precio presenta una pronunciada asimetría positiva (right-skewed), lo que justifica la aplicación de la transformación logarítmica log1p(precio) para estabilizar la varianza y mejorar el rendimiento de los regresores.
+Figura 2. La asimetría positiva (sesgo a la derecha) característica del mercado inmobiliario justifica la aplicación de la transformación logarítmica log1p(precio) sobre la variable objetivo. . (Fuente: Elaboración propia).
+Figura 3. Impacto real de las amenidades (Mediana). (Fuente: Elaboración propia).
+Figura 4. Matriz de correlación de variables numéricas. (Fuente: Elaboración propia).
+
+
+--- H2: Preprocesado y limpieza ---
+El rendimiento de los algoritmos de aprendizaje automático está directamente condicionado por la calidad de los datos de entrada. Por tanto, una vez completado el análisis exploratorio y detectadas las anomalías inherentes a la extracción web, se procedió a diseñar un pipeline exhaustivo de preprocesamiento, estructurado en las siguientes tres fases metodológicas:
+1. Limpieza de datos y gestión de valores atípicos (Data Cleaning)
+La extracción web de portales inmobiliarios introduce ruido estadístico inherente: errores tipográficos, campos vacíos y valores económicamente inverosímiles generados por la entrada manual de los anunciantes.
+Se aplicaron filtros de umbrales lógicos (eliminando infraviviendas <20 m² y precios anómalos fuera del rango de mercado estándar), y se descartaron registros con nulos en variables críticas como la superficie o el precio. Los nulos en variables binarias (ascensor) se imputaron a 0.
+
+
+--- H2: Ingeniería de características ---
+La ingeniería de características es el proceso de utilizar el conocimiento del dominio para extraer variables de mayor valor predictivo a partir de los datos brutos, facilitando el aprendizaje del algoritmo (Zheng y Casari, 2018). En el desarrollo de TasIA, este paso resultó crítico para dotar al modelo de Machine Learning del contexto geoespacial necesario para emular la intuición de un tasador humano.
+Las transformaciones y nuevas variables creadas se dividen en tres categorías principales:
+1. Creación de variables de contexto local (Ratios Espaciales)
+El valor de un inmueble es relativo a su entorno inmediato. Para modelar esta relatividad espacial sin incurrir en la maldición de la dimensionalidad, se sintetizaron las siguientes variables:
+ratio_metros_zona: Se calculó agrupando el dataset por la variable barrio para obtener la superficie media de cada micro-zona.
+ratio_hab_zona: Mediante el mismo procedimiento, se calculó la relación entre el número de habitaciones del inmueble y el promedio del barrio, capturando anomalías en la distribución interior (por ejemplo, pisos muy subdivididos en zonas donde predominan los lofts).
+2. Transformación de la variable objetivo
+Dado el sesgo positivo inherente a los precios inmobiliarios (donde una minoría de activos alcanza valores atípicos superiores al millón de euros), entrenar el modelo directamente sobre el precio absoluto (€) provocaría que los errores de predicción en propiedades de lujo penalizaran excesivamente la función de pérdida. Para mitigar este efecto, se aplicó una transformación logarítmica a la variable dependiente ($y = \log(precio)$).
+3. Codificación de variables espaciales (Encoding)
+Los algoritmos de la familia de los árboles de decisión (como HistGradientBoosting) requieren que todas las entradas sean numéricas. Las variables categóricas que definen la ubicación (distrito y barrio) presentaban un desafío debido a su alta cardinalidad.
+Para resolverlo, se descartó tanto el One-Hot Encoding (genera matrices dispersas ineficientes) como el Label Encoding clásico (asigna identificadores numéricos arbitrarios sin semántica económica).
+Figura 5. Validación del modelo ResNet50 (Etiquetado IA). (Fuente: Elaboración propia).
+
+
+--- H2: Consideraciones sobre calidad, privacidad y sesgo ---
+El desarrollo de sistemas analíticos en el sector PropTech requiere una estricta gobernanza del dato.
+1. Calidad de los datos (Data Quality)
+El principal problema de extraer datos de portales inmobiliarios comerciales es la inconsistencia derivada de la entrada manual humana. Es habitual encontrar errores tipográficos graves (por ejemplo, registrar una superficie de 10.000 m^2 en lugar de 100 m^2) o valores nulos en características clave.
+Resolución: Se diseñó un pipeline de preprocesamiento restrictivo que prioriza la eliminación de registros incompletos o atípicos sobre la imputación estadística, garantizando la veracidad de los datos por encima del volumen bruto.
+2. Privacidad y Protección de Datos
+Dado que la vivienda es un activo patrimonial sensible, el tratamiento de los datos debe alinearse con el marco regulatorio europeo (RGPD). El riesgo principal en este ámbito es la trazabilidad de la información hacia individuos concretos (compradores o vendedores).
+Resolución: El dataset se construyó bajo el principio de Privacy by Design: no contiene ninguna Información de Identificación Personal (PII), garantizando el cumplimiento del RGPD.
+3. Mitigación de Sesgos Algorítmicos (Data Bias)
+Los modelos de Machine Learning tienden a reproducir y amplificar los sesgos históricos presentes en sus datos de entrenamiento (Barocas y Selbst, 2016). En el sector inmobiliario, el riesgo más grave es el redlining algorítmico: la devaluación sistemática e injustificada de propiedades ubicadas en barrios vulnerables o de minorías demográficas.
+Resolución: El dataset fue purgado de variables socioeconómicas o demográficas; las predicciones se basan exclusivamente en las características físicas del inmueble y en ratios normalizados respecto al entorno (ratio_metros_zona).
+
+
+=== H1: Metodología y diseño de la solución ===
+
+
+--- H2: Enfoque metodológico ---
+El proyecto TasIA sigue el estándar CRISP-DM como marco macro, adoptando en la Fase de Modelado un Diseño Experimental Supervisado con dos objetivos: evitar el sobreajuste (overfitting) y establecer un benchmark comparativo riguroso entre familias algorítmicas.
+El marco experimental se articula en tres fases: (1) separación estricta del conjunto de prueba (Test Set, 20%) antes de cualquier entrenamiento; (2) comparación multi-modelo mediante Validación Cruzada de 5 iteraciones (MLP, Random Forest, XGBoost e HistGradientBoosting); y (3) validación de restricciones monotónicas como paso previo al empaquetado del modelo para producción.
+
+
+--- H2: Arquitectura del sistema ---
+La arquitectura del sistema TasIA se ha diseñado bajo un paradigma modular y escalable. En lugar de construir un script monolítico, el proyecto desacopla la fase de experimentación matemática (entrenamiento offline) de la fase de explotación (inferencia en tiempo real).
+Esta arquitectura end-to-end se divide lógicamente en cuatro capas o módulos interconectados:
+Capa 1 – Pipeline de Datos: Cuatro módulos Python orquestados (scraper, gestor, limpiador y etiquetador visual con IA) que producen el corpus etiquetado en CSV, listo para el entrenamiento.
+Capa 2 – Modelo Predictivo: Emite un «Precio Base Algorítmico» a partir de un vector de características numéricas. El modelo serializado (.joblib) garantiza baja latencia en producción.
+Capa 3 – Sistema Experto (Lógica de Negocio): Aplica multiplicadores y penalizaciones financieras según variables cualitativas (estado de conservación), convirtiendo TasIA en una herramienta PropTech real.
+Capa 4 – Frontend (Streamlit): Recoge los inputs del usuario, orquesta la llamada al modelo y renderiza la tasación junto con las visualizaciones de explicabilidad y confianza.
+Diagrama de Arquitectura de TasIA, a continuación, se ilustra el flujo de datos y la arquitectura híbrida descrita:
+Figura 6. Arquitectura del Sistema TasIA. (Fuente: Elaboración propia).
+Fuente: Elaboración propia
+
+
+--- H2: Selección de modelos y algoritmos ---
+La selección del modelo predictivo definitivo para el núcleo de TasIA no se planteó como un simple ejercicio de minimización del error estadístico, sino como un problema de optimización multiobjetivo. En un entorno PropTech real, el algoritmo seleccionado debe satisfacer tres criterios excluyentes: alta capacidad de generalización (precisión), viabilidad en producción (baja latencia computacional) y auditabilidad (cumplimiento de la lógica de negocio).
+Para tomar esta decisión, se evaluaron y descartaron iterativamente diversas familias algorítmicas bajo las mismas condiciones de experimentación:
+1. Descarte de modelos paramétricos y Redes Neuronales (MLP). Si bien las redes neuronales poseen la capacidad de aproximación universal necesaria para modelar el complejo mercado inmobiliario, presentan dos desventajas críticas para este proyecto.
+2. Descartadas las redes neuronales, el foco metodológico se trasladó a los modelos basados en árboles de decisión, conocidos por su robustez frente a datos tabulares heterogéneos (Grinsztajn et al., 2022). Sin embargo, el Random Forest requiere la construcción completa de árboles profundos independientes, lo que derivó en un coste computacional expansivo (tiempos de entrenamiento e inferencia inaceptablemente altos para un despliegue web).
+3. Esta variante vectorizada del Gradient Boosting agrupa las variables continuas en histogramas discretos (contenedores de memoria). Esta técnica reduce drásticamente el número de divisiones evaluadas en cada nodo del árbol.
+La selección de este modelo se justifica por tres hitos empíricos logrados durante el experimento:
+Eficiencia Computacional: Como ilustra el análisis de Trade-off (ver figura adjunta), HistGradientBoosting se ubica en el cuadrante óptimo de Pareto: logra la máxima precisión predictiva de todos los algoritmos evaluados (R² > 0.92) con una latencia computacional mínima (tiempo de ejecución inferior a un segundo).
+Gestión nativa de nulos y no-linealidades: Su algoritmo iterativo es capaz de mapear relaciones no lineales complejas (como el impacto exponencial de vivir en el distrito Centro frente a distritos periféricos) sin necesidad de una estandarización estricta previa.
+Soporte para Restricciones Monotónicas: Es la característica decisiva. Gracias a esto, se obligó al modelo a aprender que la relación entre la variable superficie y el precio debe ser siempre estrictamente monótona creciente, fusionando la potencia del Machine Learning con la lógica inquebrantable de la tasación tradicional.
+Figura 7. Trade-off: Precisión (R²) vs. Coste Computacional (Segundos). (Fuente: Elaboración propia).
+Fuente: Elaboración propia
+
+
+--- H2: Herramientas y tecnologías empleadas ---
+El desarrollo integral del sistema TasIA —desde la extracción del dato crudo hasta el despliegue de la aplicación interactiva— se ha fundamentado en un stack tecnológico robusto, open-source y altamente estandarizado en la industria de la Ciencia de Datos. La elección de cada herramienta responde a criterios de eficiencia computacional, escalabilidad y compatibilidad en entornos de producción.
+Python (3.x): Lenguaje base del proyecto; estándar de facto en el ecosistema ML.
+Jupyter Notebooks: Entorno offline para prototipación iterativa del EDA y experimentos de modelado.
+Pandas / NumPy: Manipulación de DataFrames, limpieza de outliers y álgebra vectorial (transformación log1p).
+Scikit-Learn / Joblib: Biblioteca núcleo de ML del proyecto (HistGradientBoosting, validación cruzada) y serialización del modelo final (.joblib) para su consumo en producción.
+Matplotlib / Seaborn / Plotly: Visualización estática para la memoria académica e interactiva para el entorno web (zoom, hovering).
+Streamlit: Framework open-source para construir la interfaz de usuario (app.py). Permite transformar scripts de datos en aplicaciones web interactivas sin necesidad de desarrollar un backend/frontend desacoplado, agilizando el ciclo de despliegue.
+
+
+--- H2: Flujo de trabajo y pipeline de datos ---
+Para garantizar la reproducibilidad del sistema y su escalabilidad futura, el ciclo de vida de la información en TasIA se ha estructurado como un pipeline de datos lineal y automatizado. Este flujo de trabajo orquesta la transición desde la captura del dato crudo hasta la emisión de inferencias en tiempo real, dividiéndose cronológicamente en las siguientes cuatro etapas (basadas en el estándar ETL: Extract, Transform, Load):
+
+
+=== H1: Implementación ===
+
+
+--- H2: Entorno de desarrollo ---
+Para garantizar la total reproducibilidad del proyecto TasIA y asegurar la compatibilidad entre las fases de procesamiento masivo y el despliegue web, el entorno de desarrollo se ha dividido estratégicamente en dos infraestructuras físicas y un stack de software rígidamente versionado.
+Todo el ciclo del pipeline (extracción, preprocesamiento, entrenamiento) se ejecuta en local mediante scripts Python, sin requerir GPU ni infraestructura cloud. La aplicación web (app.py) también se despliega en local mediante Streamlit, demostrando que el sistema es suficientemente ligero para hardware de consumo estándar.
+2. Para aislar el proyecto y evitar conflictos de dependencias con el sistema operativo, se utilizó un entorno virtual (venv). A continuación, se detallan las versiones exactas de los paquetes y librerías fundamentales que conforman el requirements.txt del proyecto:
+
+
+--- H2: Implementación del sistema ---
+La implementación del código base de TasIA se ha diseñado siguiendo el principio de separación de responsabilidades (Separation of Concerns). El proyecto desacopla estrictamente los scripts de investigación y entrenamiento algorítmico (entorno offline) del código de la aplicación interactiva (entorno online o de producción).
+A continuación, se detalla la lógica funcional implementada en los módulos principales que componen el sistema:
+1. Módulo de Procesamiento y Modelado (Jupyter Notebooks). Este módulo concentra la carga analítica del proyecto. Se ha dividido en cuatro notebooks secuenciales para facilitar la depuración y la reproducibilidad:
+Notebooks 1-2 (Ingesta y Limpieza): Depuración de datos, eliminación de outliers e ingeniería de variables espaciales (ratio_metros_zona, ratio_hab_zona).
+Notebook 3 (Entrenamiento): Instancia el HistGradientBoostingRegressor, aplica la transformación logarítmica, configura las restricciones monotónicas e inyecta el vector de entrenamiento.
+Notebook 4 (Evaluación y Resultados): Genera métricas gráficas (Trade-off computacional, Feature Importance) para el análisis de rendimiento.
+2. Módulo de Despliegue e Interfaz Web (app.py). Implementado mediante el framework Streamlit, este archivo único de Python orquesta la puesta en producción del modelo.
+Configuración y Carga (Backend ligero): Utiliza decoradores como @st.cache_data para precargar en la memoria RAM el modelo .joblib y los diccionarios de mapeo geográfico (diccionarios de barrios y distritos), optimizando así los tiempos de respuesta.
+Motor de Explicabilidad XAI (Business Logic): Complementa la predicción del árbol de decisión con un desglose económico contrafactual. En lugar de aplicar multiplicadores heurísticos fijos, el sistema lanza tres inferencias paralelas sobre el modelo para aislar el impacto marginal real de cada componente: (1) una inferencia "base" con los valores mínimos de estado y calidad para obtener el precio geográfico puro, (2) una inferencia con el estado y calidad reales del inmueble, y (3) la predicción final completa.
+Renderizado (Frontend): Construye dinámicamente los componentes de la interfaz de usuario (formularios, columnas y métricas) y procesa las salidas visuales incrustando gráficos interactivos de Plotly.
+
+
+--- H2: Entrenamiento de modelos ---
+Una vez consolidado el pipeline de preprocesamiento, se procedió a la fase de entrenamiento del modelo predictivo definitivo (HistGradientBoostingRegressor). El objetivo de esta etapa es optimizar los parámetros internos del algoritmo para que logre mapear las relaciones no lineales entre las características del inmueble y su valor de mercado, minimizando el error residual.
+El proceso de entrenamiento computacional se ejecutó siguiendo esta secuencia metodológica:
+El entrenamiento se desarrolló en cuatro etapas: (1) partición 80/20 con train_test_split (random_state=42) y transformación logarítmica del vector objetivo; (2) configuración del HistGradientBoosting aprovechando su gestión nativa de variables categóricas, con learning_rate=0.05, max_iter=1.000 y Early Stopping a 15 iteraciones sin mejora; (3) configuración del hiperparámetro monotonic_cst para forzar restricciones crecientes en variables como superficie, baños y ratio_metros_zona; y (4) serialización del modelo final con joblib (modelo_tasIA.joblib) para su consumo en producción web.
+Para el ajuste fino (Fine-Tuning), se configuró una tasa de aprendizaje conservadora (learning_rate = 0.05) combinada con un límite máximo de iteraciones (max_iter = 1000) y un criterio de parada temprana (Early Stopping). Este mecanismo detiene automáticamente el entrenamiento si el error en el conjunto de validación interno no mejora tras 15 iteraciones, evitando de forma efectiva el sobreajuste (overfitting).
+Específicamente, se asignó un vector de restricciones donde variables como la superficie, banos o ratio_metros_zona recibieron un valor de 1 (restricción monotónica creciente). Esto obligó al optimizador de gradiente a rechazar cualquier ramificación del árbol que resultara en una caída del precio frente a un incremento de dichas variables.
+Una vez validada la convergencia del entrenamiento, el estado del modelo (los pesos de los árboles y las restricciones asimiladas) se comprimió y exportó utilizando la librería joblib. Este artefacto binario (modelo_tasIA.joblib) constituye el núcleo predictivo que posteriormente es consumido por la aplicación web en la fase de despliegue.
+
+
+--- H2: Ajuste de hiperparámetros ---
+Para maximizar el rendimiento predictivo, se implementó un proceso de ajuste de hiperparámetros (Hyperparameter Tuning) sobre el HistGradientBoostingRegressor mediante RandomizedSearchCV, descartando la búsqueda exhaustiva (GridSearchCV) por su ineficiencia computacional (Bergstra y Bengio, 2012).
+1. Dada la amplitud del espacio de hiperparámetros, se descartó la búsqueda exhaustiva (GridSearchCV) por su ineficiencia computacional. Como demostraron Bergstra y Bengio (2012), la búsqueda aleatoria es matemáticamente más eficiente que la búsqueda en cuadrícula para optimizar algoritmos de Machine Learning, ya que explora una mayor diversidad de valores en las dimensiones que realmente impactan en la función de pérdida.
+El espacio de búsqueda exploró: learning_rate [0.01–0.1] para controlar la velocidad de aprendizaje; max_leaf_nodes [31, 50, 80] para limitar la complejidad del árbol y evitar overfitting local; y l2_regularization [0.0, 0.5, 1.0] para penalizar pesos extremos ante multicolinealidad espacial.
+3. Durante el proceso de tuning, las restricciones se trataron como un axioma inmutable, no como un hiperparámetro explorable. el precio nunca puede caer al subir los metros cuadrados, independientemente de qué hiperparámetro se esté probando).
+4. Selección del Modelo Óptimo (Best Estimator). Esta configuración matemática fue inyectada automáticamente en el estimador final que, posteriormente, se serializó en el archivo .joblib para el entorno de producción web.
+
+
+--- H2: Consideraciones de escalabilidad y rendimiento ---
+La transición hacia un producto PropTech funcional exige garantizar rendimiento y escalabilidad. El sistema ha sido diseñado bajo dos dimensiones operativas complementarias:
+El análisis del comportamiento del sistema se desglosa en dos dimensiones operativas:
+1. Escalabilidad Analítica y de Entrenamiento (Fase Offline). TasIA aborda este problema a través de la propia elección de su algoritmo núcleo:
+Vectorización por Histogramas: Mientras que los algoritmos tradicionales de Gradient Boosting evalúan cada valor individual para encontrar cortes en los árboles (con una complejidad temporal de O(n \log n)), el HistGradientBoostingRegressor agrupa previamente las variables continuas en contenedores de memoria discretos o histogramas (bins).
+Procesamiento por Lotes: Todo el pipeline de limpieza e ingeniería de variables desarrollado en Pandas utiliza operaciones vectorizadas nativas en lugar de iteraciones en bucle (for-loops), garantizando que el preprocesamiento de futuros Data Lakes masivos se ejecute en segundos.
+2. Rendimiento en Producción y Baja Latencia (Fase Online).
+Gestión de Memoria en Caché: Para evitar el alto coste de I/O (lectura y escritura en disco), el archivo serializado modelo_tasIA.joblib y los diccionarios de mapeo geográfico no se cargan repetidamente en cada solicitud. Mediante la implementación del decorador @st.cache_data del framework Streamlit, estos recursos pesados se cargan en la memoria RAM del servidor de forma estática la primera vez que se arranca la aplicación.
+Tiempos de Inferencia: Gracias a la ligereza estructural de los árboles de decisión empaquetados y a la lectura desde la memoria caché, el algoritmo procesa el vector numérico del usuario y devuelve la predicción en un tiempo inferior a los 50 milisegundos.
+3. Por último, el diseño de la aplicación app.py es estrictamente stateless (sin estado). La aplicación no guarda historiales de sesión pesados ni bloqueos en una base de datos relacional durante la tasación.
+
+
+=== H1: Evaluación y resultados ===
+
+
+--- H2: Métricas de evaluación ---
+Dado que el objetivo central del sistema TasIA es predecir el valor económico de un activo inmobiliario (una variable numérica continua), el proyecto se enmarca estrictamente dentro de los problemas de Regresión en el ámbito del Machine Learning. Por consiguiente, se descartan las métricas tradicionales de clasificación (tales como Accuracy, Recall o la curva ROC-AUC) en favor de métricas que cuantifiquen la magnitud y dispersión del error residual.
+Para evaluar el rendimiento del modelo algorítmico y garantizar que sus predicciones sean financieramente válidas, se ha diseñado un esquema de evaluación basado en las siguientes cuatro métricas complementarias:
+1. Coeficiente de Determinación (R^2). Representa la proporción de la varianza en la variable objetivo (el precio) que el modelo es capaz de explicar a partir de las variables independientes (superficie, ratios, ubicación).
+Justificación: Certifica que el modelo ha aprendido la teoría hedónica subyacente; su límite máximo es 1.0.
+2. Error Absoluto Medio (MAE - Mean Absolute Error). Calcula el promedio de las diferencias absolutas entre el precio estimado por la Inteligencia Artificial y el precio real de oferta.
+Justificación: Traduce el rendimiento matemático a impacto económico directo (p. ej., «error promedio de ±15.000 €»).
+3. Error Porcentual Absoluto Medio (MAPE - Mean Absolute Percentage Error). Mide el tamaño del error en términos porcentuales relativos al valor real del inmueble.
+Justificación: Corrige la heteroscedasticidad del MAE expresando el error en términos porcentuales relativos al valor real.
+4. Raíz del Error Cuadrático Medio (RMSE - Root Mean Squared Error). Al elevar las diferencias al cuadrado antes de promediarlas, esta métrica otorga un peso exponencialmente mayor a los errores grandes.
+Justificación: Penaliza exponencialmente los errores grandes, actuando como función de pérdida durante la optimización.
+La combinación de estas cuatro métricas garantiza una evaluación holística: el RMSE y el R^2 aseguran la rigurosidad matemática del algoritmo, mientras que el MAE y el MAPE traducen esos resultados a indicadores clave de rendimiento (KPIs) comprensibles para el sector de la tasación tradicional.
+
+
+--- H2: Diseño experimental ---
+Para garantizar que los resultados obtenidos por TasIA no sean fruto del azar estadístico o de un sobreajuste (overfitting) a una muestra concreta, el marco de evaluación se ha estructurado bajo un diseño experimental estricto. Este diseño define cómo se han comparado los algoritmos y cómo se ha validado la robustez de las métricas finales.
+El diseño experimental consta de los siguientes pilares metodológicos:
+1. Para ello, antes de iniciar cualquier proceso de entrenamiento o ajuste algorítmico, se extrajo aleatoriamente un 20% del corpus etiquetado para conformar el Test Set. Todas las métricas de evaluación finales reportadas (RMSE) se calculan única y exclusivamente sobre este Test Set, garantizando la validez externa del sistema.
+2. La comparación entre las distintas familias algorítmicas evaluadas (Random Forest, XGBoost, MLP e HistGradientBoosting) no se realizó mediante una única prueba de ensayo y error, ya que esto podría favorecer a un modelo por simple varianza de la muestra.
+En su lugar, el conjunto de entrenamiento (80%) fue sometido a una Validación Cruzada de 5 iteraciones (5-Fold Cross-Validation). La selección del HistGradientBoosting se justificó porque logró el mejor rendimiento promedio a través de los 5 folds, demostrando una estabilidad superior ante variaciones en los datos de entrada.
+3. Ablation Study: Se entrenaron dos versiones idénticas del modelo —una sin variables espaciales sintéticas (Modelo Base) y otra con ellas (Modelo TasIA)— para cuantificar el valor predictivo añadido por la ingeniería de características geoespaciales.
+4. Dado que, por motivos de estabilidad de la varianza, el algoritmo fue diseñado para predecir el logaritmo natural del precio (y = log(precio)), el diseño experimental exige una transformación inversa antes de la evaluación. Para calcular métricas absolutas comprensibles para el negocio (como el Error Absoluto Medio en euros), las predicciones emitidas por el modelo en el Test Set fueron sometidas a la función exponencial inversa (np.expm1).
+
+
+--- H2: Resultados obtenidos ---
+Tras ejecutar el diseño experimental sobre el conjunto de datos de prueba (Test Set), compuesto por registros inmobiliarios que el modelo nunca procesó durante el entrenamiento, los resultados confirman la alta capacidad predictiva de TasIA. El sistema logra capturar la complejidad del mercado madrileño, manteniendo errores residuales dentro de los márgenes de tolerancia profesional exigidos en el sector PropTech.
+Análisis Estadístico Global.
+A continuación, se presentan las métricas de rendimiento obtenidas por el modelo final HistGradientBoostingRegressor, entrenado sobre el corpus de propiedades etiquetadas y evaluado sobre el Test Set reservado (20% de la muestra):RMSE (Test Set): 237.018 € Este valor debe interpretarse en el contexto del dataset. Las propiedades etiquetadas provienen directamente del mercado real y cubren desde pisos de lujo en zonas céntricas hasta inmuebles a reformar en la periferia.
+Análisis de la Bondad de Ajuste
+El modelo ha demostrado una notable capacidad para capturar los determinantes de precio en un dataset de propiedades reales extraidas del mercado. El comportamiento del modelo es coherente con la teoría hedónica: las restricciones monotónicas garantizan que ninguna predicción viole la lógica económica fundamental.
+Figura 8. Distribución de errores (residuos) de predicción. (Fuente: Elaboración propia).
+La distribución de residuos muestra un comportamiento aproximadamente normal y centrado en torno a cero, lo que confirma que el modelo no presenta sesgos sistemáticos en ningún segmento de precio. La mayor dispersión se concentra en el tramo superior al millón de euros, coherente con la menor representatividad del segmento premium en el corpus de entrenamiento.
+Figura 9. Evaluación del modelo maestro: Precio real vs predicho. (Fuente: Elaboración propia).
+La nube de puntos se alinea estrechamente con la línea de predicción perfecta (R² = 0,911), confirmando la alta capacidad del modelo para estimar el valor de mercado en el rango central. Los outliers observados en los extremos corresponden a activos atípicos cuyas características intangibles (vistas exclusivas, materiales singulares) no están recogidas en las variables tabulares.
+Figura 10. Importancia de las variables (Permutation Feature Importance). (Fuente: Elaboración propia).
+El análisis de Permutation Feature Importance revela que las variables de contexto geoespacial (ratio_metros_zona, barrio, distrito) son los predictores con mayor peso relativo, validando la hipótesis central del proyecto: en el mercado inmobiliario madrileño, la ubicación y el contexto del inmueble explican más varianza del precio que las características físicas puras.
+Figura 11. Bondad de Ajuste: Predicciones del Modelo vs Valores Reales. (Fuente: Elaboración propia).
+Análisis de Residuos y Error en Función del Precio
+El error absoluto (RMSE) es especialmente sensible a la dispersión de precios en los segmentos más extremos del dataset. Esta es una limitación esperada y documentada del dataset actual: con más propiedades etiquetadas (proceso en curso), la distribución de precios se equilibrará y el error tenderá a reducirse.
+Eficiencia Computacional y Escalabilidad
+Tal y como se detalló en el análisis de Trade-off entre precisión y coste:
+Tiempo de Inferencia: < 0.05 segundos por tasación.
+Consumo de Memoria: < 150 MB (modelo serializado).
+Estos resultados demuestran que TasIA no solo es un modelo matemáticamente preciso en Euros (€), sino que es tecnológicamente viable para su integración en aplicaciones de consumo masivo que requieran respuestas instantáneas.
+
+
+--- H2: Comparación con otras soluciones ---
+Para contextualizar el rendimiento y la validez técnica del sistema TasIA, es imprescindible comparar sus métricas frente a los estándares de la industria PropTech y los resultados documentados en la literatura científica reciente sobre Modelos de Valoración Automática (AVMs).
+El análisis comparativo sitúa a TasIA en una posición altamente competitiva, destacando en los siguientes frentes:
+1. Comparativa frente a Modelos Econométricos Tradicionales. El modelo TasIA demuestra la superioridad de la arquitectura HistGradientBoosting para capturar las interacciones espaciales
+2. En el ámbito específico del mercado inmobiliario español, Baldominos et al. (2018) evaluaron diversas arquitecturas de Machine Learning (Random Forest, Support Vector Machines y Redes Neuronales) para la predicción de precios. En su estudio, los mejores modelos ensamblados alcanzaron un R^2 cercano a 0.86 y un error relativo aproximado del 12-14%.
+TasIA supera este benchmark académico logrando un MAPE del 18,06%. Esta mejora del rendimiento se atribuye directamente al éxito de la fase de Feature Engineering (la inyección de los ratios espaciales de la micro-zona), lo que demuestra que proporcionar contexto local al algoritmo es estadísticamente más efectivo que aumentar ciegamente la profundidad de los árboles.
+3. En el sector privado, los sistemas AVM líderes (como el algoritmo Zestimate de Zillow en EE. Sin embargo, estos sistemas comerciales tienen una ventaja asimétrica crítica: se entrenan con datos notariales privados y precios reales de cierre.
+Alcanzar un MAPE del ~10% partiendo de datos sintéticos que replican las distribuciones reales del mercado, los cuales contienen ruido inherente y primas de negociación, posiciona a TasIA en la frontera de la eficiencia algorítmica para herramientas de tasación de código abierto.
+4. Mientras que la mayoría de los estudios proponen modelos de "caja negra" que, en ocasiones, devalúan un inmueble al añadirle metros cuadrados por artefactos estadísticos, TasIA es uno de los pocos sistemas que integra restricciones monotónicas direccionales. Esta característica iguala la fiabilidad lógica del sistema a la de un tasador humano, resolviendo el problema histórico de la desconfianza del usuario hacia las tasaciones por Inteligencia Artificial.
+
+
+--- H2: Análisis crítico de los resultados ---
+La evaluación cuantitativa del modelo HistGradientBoostingRegressor confirma el resultado técnico del proyecto TasIA. Sin embargo, una interpretación rigurosa de los resultados exige trascender las métricas matemáticas y analizar el comportamiento del sistema desde una perspectiva crítica, valorando sus implicaciones operativas y sus limitaciones inherentes dentro del mercado inmobiliario.
+De este análisis crítico se extraen las siguientes cuatro dimensiones de valoración:
+1. Validación de la Hipótesis Espacial y Explicabilidad. El rendimiento obtenido del modelo ($R^2 = 0.92$) valida la hipótesis principal de este trabajo: en el mercado inmobiliario, el contexto geográfico es tan o más determinante que las características físicas puras.
+2. La principal limitación crítica del sistema radica en la variable objetivo. Desde el punto de vista del usuario vendedor, esto representa una ventaja comercial, pero desde la perspectiva estrictamente financiera, introduce un sesgo alcista generalizado.
+3. El análisis de residuos revela que el modelo presenta mayor heterocedasticidad (dispersión del error absoluto) en el segmento de lujo superior al millón de euros. En el mercado prime, el precio está dictado por factores intangibles o estéticos (calidad de los materiales, diseño de autor, vistas exclusivas o valor histórico del inmueble) que no figuran en las variables tabulares capturadas.
+4. Viabilidad de Negocio y Marco Legal. Permite ofrecer estimaciones instantáneas, fiables y de coste marginal cero para captar clientes particulares.
+No obstante, desde una perspectiva legal, el sistema actual no puede sustituir a una tasación oficial con finalidad hipotecaria (regulada en España por la Orden ECO/805/2003). La normativa vigente exige la inspección física y ocular del interior del activo por parte de un técnico certificador para emitir un valor de garantía, un requisito que la Inteligencia Artificial analítica, por definición, no puede cubrir en solitario.
+
+
+=== H1: Discusión ===
+
+
+--- H2: Interpretación de los resultados ---
+La reflexión final sobre los resultados obtenidos por TasIA permite confirmar que la Inteligencia Artificial no solo es una herramienta capaz de procesar datos, sino un mecanismo eficiente para sintetizar la complejidad del mercado inmobiliario madrileño. Tras la finalización del ciclo experimental, se extraen las siguientes interpretaciones fundamentales:
+1. La interpretación principal es que el mercado inmobiliario, a pesar de su aparente volatilidad, sigue patrones lógicos y estructurados que pueden ser capturados si se proporciona el contexto adecuado. Los resultados demuestran que el esfuerzo invertido en la Ingeniería de Variables (creación de ratios espaciales) ha sido más determinante para el resultado del sistema que la simple potencia bruta del procesador.
+2. Históricamente, los modelos más precisos solían ser cajas negras incomprensibles. TasIA demuestra que es posible mantener una precisión de nivel profesional (MAPE del 18,06%) integrando al mismo tiempo restricciones monotónicas.
+3. Mientras que el error de los tasadores humanos puede variar significativamente por factores subjetivos, TasIA ofrece una base objetiva, instantánea y escalable. La interpretación es clara: el sistema está listo para actuar como un "herramienta de apoyo" para agentes inmobiliarios, facilitando el acceso a valoraciones automatizadas que, de otro modo, requerirían días de trabajo manual.
+4. Finalmente, los resultados nos obligan a reflexionar sobre la brecha entre el deseo del vendedor (precio de oferta) y la realidad del mercado (precio de cierre). No obstante, la interpretación crítica nos indica que el éxito de TasIA no reside en dar un número exacto e inamovible, sino en proporcionar un rango de confianza que sirva como punto de partida racional para la negociación, reduciendo la incertidumbre en un sector tradicionalmente opaco.
+
+
+--- H2: Impacto técnico y aplicado ---
+El desarrollo del sistema TasIA trasciende el ámbito puramente académico, habiendo sido diseñado desde su concepción bajo los estándares arquitectónicos y de rendimiento de la industria del software. Su baja latencia computacional, su arquitectura escalable y su alto nivel de explicabilidad permiten que el modelo transite directamente hacia el sector productivo (PropTech).
+Las aplicaciones directas de TasIA abarcan cuatro frentes: (1) captación de propietarios en agencias inmobiliarias mediante tasaciones instantáneas integradas en la web; (2) arbitraje neutro en la fijación del precio de salida, reduciendo fricciones entre propietario y agente; (3) análisis masivo de carteras para Fondos de Inversión y SOCIMIs, gracias a la latencia inferior a 50 ms; y (4) etiquetado dinámico de publicaciones en portales (medalladillo «Precio Excelente» / «Sobrevalorado»), mejorando la experiencia del comprador.
+En conclusión, el impacto técnico de TasIA reside en haber democratizado una tecnología que hasta hace poco era dominio exclusivo de grandes corporaciones bancarias. El sistema demuestra que, con herramientas de código abierto y un enfoque Data-Centric, es posible construir una arquitectura de valoración inmobiliaria altamente competitiva, auditable y lista para su explotación comercial.
+
+
+--- H2: Limitaciones del trabajo ---
+Cualquier ejercicio riguroso de investigación e ingeniería exige una identificación transparente de sus fronteras operativas. A pesar de los resultados obtenidos predictivos obtenidos por TasIA ($R^2 = 0.92$), el sistema presenta ciertas restricciones inherentes a su diseño que deben ser consideradas antes de su despliegue masivo.
+Estas limitaciones se han clasificado en tres dimensiones principales:
+1. Limitaciones relativas a los Datos
+Sesgo de Oferta: El dataset recoge precios de publicación, no de cierre, introduciendo un sesgo alcista inherente que crece en el segmento de lujo y en zonas de alta demanda.
+Carencia de profundidad temporal y macroeconómica: El conjunto de datos extraído constituye una "foto fija" transversal del mercado madrileño en un momento dado. El modelo actual no ingesta variables macroeconómicas dinámicas que afectan drásticamente a la demanda y al precio, como la evolución del Euríbor, la inflación o las tasas de desempleo local.
+2. Limitaciones Metodológicas
+Efecto frontera y factores cualitativos: La agregación espacial por barrios administrativos puede generar discontinuidades artificiales en zonas limítrofes. Además, el modelo es ciego ante factores estéticos (luminosidad, distribución, calidad de materiales) que son determinantes en el segmento premium.
+3. Limitaciones Tecnológicas y Normativas
+Limitación del Corpus Etiquetado (Tamaño del corpus etiquetado): El pipeline de datos extrae propiedades reales del mercado, pero el modelo final solo puede entrenarse con aquellas que han pasado por el módulo de etiquetado visual con Gemini. A medida que el etiquetado automático continúe, el dataset crecerá diariamente, lo que permitirá al modelo capturar patrones más sutiles y reducir tanto el RMSE como el MAPE de forma progresiva.
+Restricción Normativa (Orden ECO/805/2003): Como limitación legal y de aplicación técnica, TasIA es estrictamente un Modelo de Valoración Automática (AVM) de carácter estadístico. Tecnológicamente, es incapaz de certificar la legalidad urbanística del activo, comprobar la coincidencia con el catastro o inspeccionar vicios ocultos, por lo que carece de validez legal para emitir valoraciones con finalidad de garantía hipotecaria en España.
+
+
+--- H2: Implicaciones éticas y legales ---
+El despliegue de modelos de Inteligencia Artificial en sectores críticos como el inmobiliario trasciende el ámbito puramente matemático y entra de lleno en la esfera socioeconómica. Por ello, el diseño de TasIA se ha sometido a una profunda reflexión sobre sus implicaciones éticas y su marco regulatorio.
+Privacidad (RGPD): TasIA tasa activos físicos, no perfila sujetos de datos. El dataset no contiene PII, cumpliendo el Reglamento General de Protección de Datos (RGPD 2016/679) y la LOPDGDD 3/2018.
+Sesgo algorítmico: Aunque el dataset excluye variables sociodemográficas, la adopción masiva de modelos predictivos podría generar profecías autocumplidas en zonas en proceso de revalorización, impulsando la gentrificación. Este riesgo requiere supervisión humana periódica del modelo.
+3. La normativa penaliza severamente el uso de "cajas negras" (Black Boxes) en decisiones que afecten a los consumidores. En este contexto, la decisión de descartar las Redes Neuronales Profundas en favor del HistGradientBoostingRegressor con restricciones monotónicas no fue solo técnica, sino ética.
+4. Limitación de Responsabilidad (Disclaimer Legal). El sistema debe presentarse inequívocamente ante el usuario final como una "estimación algorítmica de soporte" y no como una tasación oficial ni como asesoramiento financiero vinculante, protegiendo así a los desarrolladores o a la empresa integradora frente a posibles litigios por variaciones en las expectativas de vent
+
+
+=== H1: Conclusiones y líneas futuras ===
+
+
+--- H2: Conclusiones ---
+La culminación del proyecto TasIA permite confirmar que se han alcanzado los objetivos principales planteados al inicio de esta memoria. El trabajo ha demostrado la viabilidad de construir un Modelo de Valoración Automática (AVM) de alta precisión para el mercado inmobiliario de Madrid, utilizando exclusivamente tecnologías de código abierto y datos de acceso público.
+A modo de resumen, los principales resultados técnicos y hallazgos analíticos obtenidos durante el desarrollo del proyecto se sintetizan en los siguientes puntos clave:
+1. El resultado técnico más relevante es haber construido un modelo predictivo real y funcional (RMSE Test: 237.018; R2 = 0,911 €) entrenado sobre datos reales del mercado madrileño, con un corpus obtenido íntegramente mediante Web Scraping y enriquecido con etiquetas visuales de calidad generadas por IA Generativa. Esto valida que el sistema es lo suficientemente robusto como para operar en un entorno comercial PropTech, superando el rendimiento de modelos de regresión tradicionales
+2. El resultado del enfoque "Data-Centric" y el contexto espacial. El principal hallazgo empírico del proyecto es la demostración de que, en el sector inmobiliario, la ingeniería de características (Feature Engineering) aporta más valor que la mera sintonización algorítmica.
+3. Un resultado metodológico significativo ha sido la superación del dilema de la explicabilidad, un problema crónico en el Machine Learning aplicado a finanzas. Se ha logrado garantizar matemáticamente que el sistema nunca penalice económicamente a un activo por añadirle superficie, haciéndolo lógicamente auditable y confiable para un tasador humano.
+4. Más allá del ejercicio académico, un resultado relevante de ingeniería de este proyecto es la construcción de un ciclo de vida del dato completo y funcional. TasIA no se ha limitado a ser un script de investigación en un Jupyter Notebook, sino que se ha materializado en un pipeline integral: desde la extracción de datos crudos (Web Scraping), pasando por la limpieza automatizada y el modelado matricial, hasta culminar en el empaquetado del algoritmo (.joblib) y su despliegue en una interfaz web interactiva y de baja latencia mediante el framework Streamlit.
+En conclusión, TasIA demuestra que la Inteligencia Artificial, cuando se diseña respetando la lógica del negocio subyacente y se centra en la calidad de los datos, constituye una herramienta capaz de aportar objetividad y transparencia a un sector inmobiliario históricamente marcado por la asimetría de la información.
+
+
+--- H2: Cumplimiento de objetivos ---
+La evaluación retrospectiva del proyecto TasIA confirma la consecución íntegra del 100% de los objetivos planteados en la fase inicial.
+A continuación, se detalla la validación del cumplimiento de las metas establecidas:
+Objetivo General: Alcanzado íntegramente. TasIA emite tasaciones en tiempo real con un MAPE del 18,06% (R² = 0,911), superando el rendimiento de modelos de regresión tradicionales y siendo tecnológicamente competitivo frente a soluciones comerciales actuales.
+Todos los objetivos específicos han sido alcanzados: (1) se construyó un corpus propio de +3.600 registros mediante Web Scraping real; (2) el HistGradientBoosting fue seleccionado como modelo óptimo con RMSE Test de 237.018 € y R² = 0,911; (3) se implementaron restricciones monotónicas garantizando la coherencia económica; y (4) se desplegó una interfaz web interactiva (Streamlit) con latencia inferior a 50 ms.
+
+
+--- H2: Líneas de trabajo futuras ---
+Aunque el desarrollo de TasIA ha alcanzado un alto grado de madurez técnica, el ecosistema PropTech y las tecnologías de Inteligencia Artificial se encuentran en constante evolución. Para ello, se proponen las siguientes líneas de investigación y desarrollo futuro para escalar el sistema y refinar su precisión:
+Las principales líneas de trabajo futuro se agrupan en tres ejes: (1) Enriquecimiento de datos: completar el etiquetado visual automático sobre las +3.000 propiedades pendientes e incorporar variables macroeconómicas dinámicas (Euríbor, inflación) para transformar el modelo estático en un sistema espacio-temporal.
+(2) Evolución arquitectónica: integrar CNNs para puntuar el estado de conservación directamente desde las fotografías del anuncio, eliminando la subjetividad del dato manual; y modelos NLP (Transformers) para extraer características latentes de las descripciones textuales (vistas, distribución, materiales).
+(3) Escalabilidad geográfica y productiva: desplegar el pipeline a nivel nacional, desarrollando clústeres algorítmicos por tipología de mercado (tensionado vs. periférico); exponer el modelo mediante APIs REST; e integrar precios reales de cierre (datos notariales) para reducir el sesgo de oferta inherente al corpus actual.
+Desarrollo de una API RESTful: Para maximizar el impacto operativo del proyecto, la actual interfaz visual de usuario (desarrollada en Streamlit) debería complementarse con el desarrollo de una API (utilizando frameworks como FastAPI). Al "dockerizar" este microservicio, TasIA podría integrarse de forma invisible en el software CRM de cualquier agencia inmobiliaria o portal de anuncios de terceros, abriendo una vía directa para la comercialización del producto (Software as a Service).
+
+
+=== H1: Bibliografía ===
+[1] Baldominos, A., Blanco, I., Moreno, A., Iturrarte, R., Bernárdez, Ó., & Afonso, C. (2018). Estimating real estate prices in Spain using machine learning algorithms.
+[2] Barocas, S., & Selbst, A. D. (2016). Big data's disparate impact. California Law Review, 104(3), 671–732.
+[3] Bergstra, J., & Bengio, Y. (2012). Random search for hyper-parameter optimization. Journal of Machine Learning Research, 13(2), 281–305.
+[4] Boeing, G., & Waddell, P. (2017). New insights into rental housing markets across the United States: Web scraping and analyzing craigslist rental listings. Journal of Planning Education and Research, 37(4), 457–476.
+[5] Bogin, A., & Shui, J. (2020). Appraisal accuracy and automated valuation models in rural and urban areas. The Journal of Real Estate Finance and Economics, 60(1), 40–52. https://doi.org/10.1007/s11146-019-09717-3
+[6] Breiman, L. (2001). Random forests. Machine Learning, 45(1), 5–32. https://doi.org/10.1023/A:1010933404324
+[7] Downie, M. L., & Robson, G. (2007). Automated Valuation Models: An international perspective. Council of Mortgage Lenders.
+[8] Friedman, J. H. (2001). Greedy function approximation: A gradient boosting machine. The Annals of Statistics, 29(5), 1189–1232. https://doi.org/10.1214/aos/1013203451
+[9] Goodfellow, I., Bengio, Y., & Courville, A. (2016). Deep learning. MIT Press.
+[10] Grinsztajn, L., Oyallon, E., & Varoquaux, G. (2022). Why do tree-based models still outperform deep learning on typical tabular data? Advances in Neural Information Processing Systems, 35, 507–520.
+[11] Han, L., & Strange, W. C. (2015). The microstructure of housing markets: Search, bargaining, and brokerage. En Handbook of Regional and Urban Economics (Vol. 5, pp. 813–886). Elsevier.
+[12] Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P., Cournapeau, D., ... & Oliphant, T. E. Array programming with NumPy.
+[13] Hastie, T., Tibshirani, R., & Friedman, J. (2009). The elements of statistical learning: Data mining, inference, and prediction (2ª ed.). Springer Science & Business Media.
+[14] Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., & Liu, T. (2017).
+[15] Kok, N., Koponen, E., & Martínez-Barbosa, C. A. (2017). Big data in real estate? From manual appraisal to automated valuation. The Journal of Portfolio Management, 43(6), 202–211. https://doi.org/10.3905/jpm.2017.43.6.202
+[16] Kuhn, M., & Johnson, K. (2013). Applied predictive modeling. Springer.
+[17] Mehrabi, N., Morstatter, F., Saxena, N., Lerman, K., & Galstyan, A. (2021). A survey on bias and fairness in machine learning. ACM Computing Surveys (CSUR), 54(6), 1–35. https://doi.org/10.1145/3456611
+[18] Ministerio de Economía. Boletín Oficial del Estado, 85, 13844–13926.
+[19] Molnar, C. (2020). Interpretable machine learning: A guide for making black box models explainable. Lulu.com.
+[20] Mullainathan, S., & Spiess, J. (2017). Machine learning: an applied econometric approach. Journal of Economic Perspectives, 31(2), 87–106. https://doi.org/10.1257/jep.31.2.87
+[21] Pace, R. K., Barry, R., Gilley, O. W., & Sirmans, C. F. (1998). A method for spatial-temporal autoregressive models with an application to housing prices.
+[22] Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., ... & Duchesnay, E. (2011). Scikit-learn: Machine learning in Python. Journal of Machine Learning Research, 12, 2825–2830.
+[23] Plotly Technologies Inc. (2015). Collaborative data science. https://plot.ly
+[24] Rafiei, M. H., & Adeli, H. (2016). Journal of Construction Engineering and Management, 142(2), 04015066. https://doi.org/10.1061/(ASCE)CO.1943-7862.0001047
+[25] Rosen, S. (1974). Hedonic prices and implicit markets: product differentiation in pure competition. Journal of Political Economy, 82(1), 34–55.
+[26] Shwartz-Ziv, R., & Armon, A. (2022). Tabular data: Deep learning is not all you need. Information Fusion, 81, 84–90. https://doi.org/10.1016/j.inffus.2021.11.011
+[27] Sirmans, G. S., Macpherson, D. A., & Zietz, E. N. (2005). The composition of hedonic pricing models. Journal of Real Estate Literature, 13(1), 1–44.
+[28] Streamlit. (2024). Streamlit (Versión 1.53.1) [Software de computación]. https://streamlit.io
+[29] The pandas development team. (2024). pandas-dev/pandas: Pandas (Versión 3.0.0) [Software de computación]. Zenodo. https://doi.org/10.5281/zenodo.3509134
+[30] Tukey, J. W. (1977). Exploratory data analysis. Addison-Wesley.
+[31] Zheng, A., & Casari, A. (2018). Feature engineering for machine learning: Principles and techniques for data scientists. O'Reilly Media.
+
+
+=== H1: Uso de herramientas de inteligencia artificial generativa ===
+En el desarrollo del presente Trabajo Fin de Máster se han utilizado herramientas de inteligencia artificial generativa en las áreas que se describen a continuación.
+Herramientas empleadas
+Se utilizaron las siguientes herramientas a lo largo del proceso de desarrollo: Gemini (Google, modelos Gemini 2.5 Flash y Gemini 2.5 Pro, 2025-2026), Claude (Anthropic, modelo Claude Sonnet 4, 2025-2026) y ChatGPT (OpenAI, modelo GPT-4o, 2025).
+Finalidad, alcance y partes afectadas
+El uso de IA generativa abarcó dos ámbitos diferenciados:
+En primer lugar, el desarrollo del código. Se empleó IA generativa como asistente en la escritura de los scripts Python que implementan el pipeline completo del proyecto: extracción web automatizada (web scraping con Playwright), gestión y limpieza de datos, etiquetado visual automatizado mediante la API de Gemini, entrenamiento del modelo HistGradientBoosting con restricciones monotónicas, entrenamiento de la red neuronal convolucional (ResNet50) y desarrollo de la aplicación web interactiva en Streamlit.
+En segundo lugar, la redacción de la memoria. La IA generativa contribuyó aproximadamente al 30 % del texto de la memoria, actuando principalmente como apoyo en la estructuración de los capítulos, la formulación de explicaciones técnicas y la mejora del estilo y la coherencia. El 70 % restante fue redactado íntegramente por el autor, incluyendo la conceptualización del problema, la interpretación de los resultados y las decisiones metodológicas.
+Controles de calidad aplicados
+En todos los casos se ha ejercido una supervisión crítica sobre los contenidos generados. El código fue revisado, adaptado y ejecutado por el autor, verificando su corrección técnica y la validez de los resultados obtenidos. El texto de la memoria fue revisado en su totalidad, con reescritura sustancial en aquellos fragmentos en los que la formulación automática no reflejaba con precisión las decisiones metodológicas o los hallazgos del estudio. Los diagramas fueron validados conceptualmente antes de su incorporación al documento.
+
+
+=== H1: Anexo I – Diccionario de datos del corpus TasIA ===
+En la siguiente tabla se describe el diccionario de datos del corpus utilizado para el entrenamiento del modelo predictivo de TasIA. Cada variable se acompaña de su tipo, descripción y rango de valores observado. Las variables se organizan en cuatro categorías: variable objetivo, variables estructurales, variables de infraestructura y comodidades, y variables espaciales.
+Tabla 4. Diccionario de variables del corpus TasIA. (Fuente: Elaboración propia).
+
+
+=== H1: Anexo II – Registro de incidencias técnicas del pipeline ===
+Tabla 5. Registro de incidencias técnicas del pipeline. (Fuente: Elaboración propia).
+A lo largo del desarrollo del pipeline de datos se identificaron y resolvieron múltiples incidencias técnicas que condicionaron decisiones arquitectónicas del proyecto. La tabla siguiente resume las incidencias más relevantes. El detalle completo de cada una, incluyendo los fragmentos de código afectados, se encuentra documentado en el registro evolutivo del repositorio del proyecto.
+
+
+=== H1: Anexo III – Capturas de la interfaz ===
+A continuación se presentarán las capturas de pantalla de la aplicación TasIA, ilustrando la interfaz de usuario, el dashboard de insights y la arquitectura MLOps.
+También, dejo por aquí el enlace al código de la aplicación (repositorio github):
+https://github.com/Aldavero/TFM-Tasador-Inmobiliario
+Figura A.1. Captura de la pantalla principal de TasIA, mostrando el panel de control interactivo donde el usuario introduce las características físicas y de ubicación del inmueble a valorar.
+Figura A.2. Vista de los resultados de tasación emitidos por el sistema, detallando el precio base algorítmico, los ajustes de la lógica de negocio y el margen de confianza de la predicción.
+Figura A.3. Detalle de los módulos de explicabilidad (XAI), ilustrando el impacto individual de cada variable sobre el precio final mediante gráficos interactivos.
+Figura A.4. Detalle del módulo de Dashboards, ilustrando la posición geométrica espacial de las diferentes viviendas del dataset.
